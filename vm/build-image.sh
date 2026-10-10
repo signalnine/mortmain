@@ -101,10 +101,15 @@ runcmd:
   - - bash
     - -c
     - |
-      set -o pipefail
       mkdir -p /run/mmpayload
-      if tar -xf /dev/disk/by-id/virtio-mmpayload -C /run/mmpayload \
-         && bash /run/mmpayload/provision.sh /run/mmpayload 2>&1 | tee /var/log/mortmain-provision.log > /dev/ttyS0; then
+      # Log to a file, then copy to the console: a serial write error (getty
+      # takes ttyS0 mid-run) must not fail or SIGPIPE the provisioning.
+      ok=0
+      tar -xf /dev/disk/by-id/virtio-mmpayload -C /run/mmpayload \
+        && bash /run/mmpayload/provision.sh /run/mmpayload > /var/log/mortmain-provision.log 2>&1 \
+        && ok=1
+      cat /var/log/mortmain-provision.log > /dev/ttyS0 2>/dev/null || true
+      if [ "$ok" = 1 ]; then
         touch /etc/cloud/cloud-init.disabled
         fstrim -av > /dev/ttyS0 2>&1 || true
         sync
