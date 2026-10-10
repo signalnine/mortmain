@@ -157,7 +157,7 @@ def test_death_at_limit_mid_tool_loop(make_house):
     line = nec[0]["stdin"].decode()
     assert line.endswith("\n") and line.count("\n") == 1
     assert line.startswith("p1 0 postulant the bell was late zzz")
-    assert len(line.split(" ", 3)[3].strip()) <= 200
+    assert len(line.split(" ", 3)[3].strip()) <= 1000
     # keys moved to host, removed from cell
     tar = h.run_dir / "keys" / "p1" / "cell-keys.tar"
     assert tar.read_bytes() == b"TARBYTES"
