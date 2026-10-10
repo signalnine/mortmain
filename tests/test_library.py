@@ -17,6 +17,10 @@ GOOD = {"name": "ember", "title": "THE EMBER", "steps": [{"kind": "meditate", "t
                                                       {"kind": "THINK", "text": "What stayed?"}]}
 
 
+N_SEED = len(list((ROOT / "seed" / "rites").glob("*.json"))) + len(list((ROOT / "seed" / "tables").glob("*.table")))
+FIRST = f"w{N_SEED + 1:04d}"
+
+
 def rite_bytes(d=GOOD, **kw):
     d = dict(d, **kw)
     return json.dumps(d).encode()
@@ -126,15 +130,17 @@ def test_lineage_init_admits_seed_rites(make_house):
     h = make_house()
     h.start()
     lib = h.modules["library"]
-    seeds = sorted((ROOT / "seed" / "rites").glob("*.json"))
+    rites = sorted((ROOT / "seed" / "rites").glob("*.json"))
+    seeds = rites + sorted((ROOT / "seed" / "tables").glob("*.table"))
     assert len(lib.works) == len(seeds)
     cat = h.backend.files["/library/catalog"].data.decode().splitlines()
     assert cat[0] == f"w0001 rite /library/outer/{seeds[0].name} - {seeds[0].stat().st_size}"
+    assert cat[-1].split()[1] == "table"
     assert len(cat) == len(seeds)
     f = h.backend.files[f"/library/outer/{seeds[0].name}"]
     assert (f.owner, f.group, f.mode) == ("root", "novice", 0o640)
     assert all(w["author"] == "-" and w["sha256"] for w in lib.works.values())
-    assert lib.seed_rite_names() == {p.stem for p in seeds}
+    assert lib.seed_rite_names() == {p.stem for p in rites}
     assert h.backend.snapshots == ["gen-0"]
     # idempotent across restarts of the same lineage
     h.start()
@@ -153,15 +159,15 @@ def test_admit_verifies_signature_and_certifies(make_house, tmp_path):
     r = sh(h, m, "admit work.txt -s seal")
     assert r.exit_code == 0, out(r)
     wid = out(r).strip()
-    assert wid == "w0017"
+    assert wid == FIRST
     lib = h.modules["library"]
     w = lib.works[wid]
     data = b"a line left behind\n"
     assert w["verified"] is True and w["sha256"] == hashlib.sha256(data).hexdigest()
-    assert w["author"] == "ash" and w["path"] == "/library/outer/w0017.txt" and w["kind"] == "text"
+    assert w["author"] == "ash" and w["path"] == f"/library/outer/{FIRST}.txt" and w["kind"] == "text"
     assert w["seal"] == "it was for the next one\n"
-    assert h.backend.files["/library/outer/w0017.txt"].data == data
-    assert "w0017 text /library/outer/w0017.txt ash 19" in h.backend.files["/library/catalog"].data.decode()
+    assert h.backend.files[f"/library/outer/{FIRST}.txt"].data == data
+    assert f"{FIRST} text /library/outer/{FIRST}.txt ash 19" in h.backend.files["/library/catalog"].data.decode()
     # the seal never enters the guest
     assert not any(b"it was for the next one" in f.data for p, f in h.backend.files.items()
                    if not p.startswith("/cloister/ash/"))
@@ -199,7 +205,7 @@ def test_bad_signature_rejected(make_house, tmp_path):
     r = h.backend.client(m.uid, "admit", {"path": "/cloister/ash/work.txt", "text": "words\n",
                                           "sig": forged.replace("A", "B", 1)}, h.spool)
     assert r["err"] == "bad signature"
-    assert len(lib.works) == 16 and libmod.allowance_used(m) == 0
+    assert len(lib.works) == N_SEED and libmod.allowance_used(m) == 0
     assert events(h, "admit.refused")
 
 
@@ -258,7 +264,7 @@ def test_allowance(make_house, tmp_path):
 
 
 def test_quota_full_and_burn_swap(make_house, tmp_path):
-    seed_total = sum(p.stat().st_size for p in (ROOT / "seed" / "rites").glob("*.json"))
+    seed_total = sum(p.stat().st_size for p in [*(ROOT / "seed" / "rites").glob("*.json"), *(ROOT / "seed" / "tables").glob("*.table")])
     h = keyed_house(make_house, tmp_path, overrides={"library": {"quota_bytes": seed_total + 100}})
     lib = h.modules["library"]
     m = adept(h, "ash")

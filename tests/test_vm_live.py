@@ -101,7 +101,7 @@ def test_layout_matches_plan(be):
     assert root(be, "ls -A /usr/share/metacog/rites") == ""
     for g in ["monks", "postulant", "novice", "adept", "chronicler", "elder"]:
         root(be, f"getent group {g}")
-    for c in ["profess", "ordeal", "admit", "burn", "prove", "offer", "consult", "testify", "propose", "ratify"]:
+    for c in ["profess", "ordeal", "admit", "burn", "prove", "offer", "consult", "testify", "propose", "ratify", "yarrow"]:
         assert root(be, f"readlink /usr/local/bin/{c}").strip() == "house"
 
 

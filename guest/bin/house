@@ -176,6 +176,11 @@ def main():
             usage(cmd, "ratify ID")
         request(cmd, {"id": a[0]})
 
+    elif cmd == "yarrow":
+        if len(a) > 1:
+            usage(cmd, "yarrow [TABLE]")
+        request(cmd, {"table": a[0] if a else None})
+
     else:
         die("house", "unknown command: " + cmd)
 

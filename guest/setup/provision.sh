@@ -131,7 +131,7 @@ if [ -d "$PAYLOAD/man1" ]; then
     done
 fi
 if [ -f /usr/local/bin/house ]; then
-    for c in profess ordeal admit burn prove offer consult testify propose ratify; do
+    for c in profess ordeal admit burn prove offer consult testify propose ratify yarrow; do
         ln -sfn house "/usr/local/bin/$c"
     done
 fi

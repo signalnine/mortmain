@@ -91,6 +91,8 @@ def seed_texts(root: Path = ROOT, run_toml: Path | None = None) -> Iterator[tupl
         parts = [str(r.get("name", "")), str(r.get("title", ""))]
         parts += [f"{s.get('kind', '')} {s.get('text', '')}" for s in r.get("steps", []) if isinstance(s, dict)]
         yield f"rites/{p.name}", "\n".join(parts)
+    for p in sorted((root / "seed" / "tables").glob("*.table")):
+        yield f"tables/{p.name}", p.read_text()
     toml = run_toml or root / "config" / "run.toml"
     if toml.exists():
         with open(toml, "rb") as f:

@@ -189,7 +189,7 @@ def _driven_house(make_house, tmp_path, monkeypatch, overrides):
 
 
 def test_overlap_run_with_succession_and_elder(make_house, tmp_path, monkeypatch):
-    seed_total = sum(p.stat().st_size for p in (ROOT / "seed" / "rites").glob("*.json"))
+    seed_total = sum(p.stat().st_size for p in [*(ROOT / "seed" / "rites").glob("*.json"), *(ROOT / "seed" / "tables").glob("*.table")])
     h = _driven_house(make_house, tmp_path, monkeypatch, {
         "species": {"haiku": {"life_budget": 4500}, "sol": {"life_budget": 13500}},
         "library": {"quota_bytes": seed_total + 150},

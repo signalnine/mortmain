@@ -121,3 +121,7 @@ Global clock `t` measured in short lifespans. Elder target fraction = `t / 3 mod
 ## Seed text rules (enforced by `tests/test_seed_text.py`)
 
 Every string a monk can see (Rule, man pages, client output, metacog output, rite steps, bell lines, arrival prompt) is checked: no model or lab names, no capitalized proper nouns outside an allowlist (generation-zero terms), no "because"/"in order to"/"so that" explanations in the Rule and man pages, ASCII only.
+
+## Divination (added 2026-10-10)
+
+`yarrow [TABLE]` (mortmain/divination.py): host-mediated cast by the 50-stalk method, six lines, figure 1..64 by line bits (bottom = low bit, yang = 1), changed figure when lines change. No traditional ordering, names or texts: meaning comes from tables. Tables are a third library work kind: `NAME.table`, exactly 64 printable ASCII lines of at most 64 bytes, admitted, quota-charged and burnable like any work. Generation-zero tables (tools/gen_tables.py -> seed/tables/): `names` (syllable names valid for profess, none in the system dictionaries), `verbs`, `primitives` (the 18 metacog primitives). Every cast is logged stalk by stalk. Any grade may cast; inner tables need adept.

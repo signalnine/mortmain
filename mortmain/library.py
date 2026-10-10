@@ -2,6 +2,7 @@
 
 Layout in the guest (docs/plan.md "Filesystem"):
   /library/outer/<name>.json   rites (the file name is the rite name: metacog finds them by it)
+  /library/outer/<name>.table  tables (64 lines, one per figure; read by yarrow(1))
   /library/outer/<id>.txt      texts
   /library/inner/...           the same, admitted with -i (group adept)
   /library/catalog             one line per work: ID KIND PATH AUTHOR BYTES
@@ -22,9 +23,11 @@ Decisions (defaults):
 - Quota counts every byte in outer and inner. "Full" means the new work does
   not fit; then -b ID is required. Burning is allowed whether or not the
   library is full. The swap is one for one: one burned, one admitted.
-- A file NAME.json that passes metacog's rite schema is a rite; anything else
-  is a text (as admit(1) says). A rite whose name is held by another rite in
-  the library is refused, unless that rite is the one being burned.
+- A file NAME.json that passes metacog's rite schema is a rite; a file
+  NAME.table of exactly 64 non-empty printable ASCII lines of at most 64 bytes
+  is a table; anything else is a text (as admit(1) says). A rite or table whose
+  name is held by another of its kind in the library is refused, unless that
+  work is the one being burned.
 - The allowance (per life, bytes) is shared with vessel offerings through
   allowance_used / allowance_left / charge_allowance below.
 """
@@ -193,6 +196,44 @@ def rite_kind(filename: str, data: bytes) -> str | None:
         return None
 
 
+TABLE_FILE_RE = re.compile(r"([a-z][a-z0-9-]{0,31})\.table")
+TABLE_ENTRIES = 64
+TABLE_ENTRY_MAX = 64
+
+
+class TableError(ValueError):
+    pass
+
+
+def parse_table(data: bytes, stem: str) -> list[str]:
+    """64 entries, one per figure. Strict: printable ASCII, non-empty, <= 64 bytes."""
+    try:
+        text = data.decode("ascii")
+    except UnicodeDecodeError:
+        raise TableError("not ascii")
+    lines = text.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    if len(lines) != TABLE_ENTRIES:
+        raise TableError(f"{len(lines)} lines, want {TABLE_ENTRIES}")
+    for i, e in enumerate(lines, 1):
+        if not e.strip() or len(e) > TABLE_ENTRY_MAX or not all(32 <= ord(c) < 127 for c in e):
+            raise TableError(f"line {i}")
+    return lines
+
+
+def table_kind(filename: str, data: bytes) -> str | None:
+    """Table name if FILE is NAME.table and a valid table, else None."""
+    m = TABLE_FILE_RE.fullmatch(filename)
+    if not m:
+        return None
+    try:
+        parse_table(data, m.group(1))
+    except TableError:
+        return None
+    return m.group(1)
+
+
 # ----------------------------------------------------------------- signatures
 
 def ssh_keygen() -> str:
@@ -315,26 +356,35 @@ class Library:
                                       mode=0o640, owner="root", group="novice")
 
     def init_lineage(self) -> None:
-        """Admit every seed rite into /library/outer as authorless works."""
+        """Admit every seed rite and table into /library/outer as authorless works."""
         if self.st["init"]:
             return
         h = self.house
         seed_dir = Path(self.cfg.get("seed_rites", "seed/rites"))
         if not seed_dir.is_absolute():
             seed_dir = ROOT / seed_dir
-        for p in sorted(seed_dir.glob("*.json")):
+        seeds = [(p, "rite") for p in sorted(seed_dir.glob("*.json"))]
+        tables_dir = Path(self.cfg.get("seed_tables", "seed/tables"))
+        if not tables_dir.is_absolute():
+            tables_dir = ROOT / tables_dir
+        seeds += [(p, "table") for p in sorted(tables_dir.glob("*.table"))]
+        for p, kind in seeds:
             data = p.read_bytes()
-            rite = parse_rite(data, p.stem)  # a broken seed is a build error
+            if kind == "rite":
+                rite = parse_rite(data, p.stem)  # a broken seed is a build error
+            else:
+                parse_table(data, p.stem)
+                rite = {"name": p.stem}
             wid = self._new_id()
             path = f"/library/outer/{p.name}"
             h.backend.write_file(path, data, mode=0o640, owner="root", group="novice")
-            w = {"id": wid, "kind": "rite", "name": rite["name"], "filename": p.name, "path": path,
+            w = {"id": wid, "kind": kind, "name": rite["name"], "filename": p.name, "path": path,
                  "author": GEN0_AUTHOR, "author_monk": None, "generation": 0, "bytes": len(data),
                  "sha256": hashlib.sha256(data).hexdigest(), "signature": None, "verified": None,
                  "seed": True, "inner": False, "seal": None, "status": "library",
                  "store": self._store(wid, p.name, data), "cell_path": None, "ossuary_path": None}
             self.works[wid] = w
-            h.log.append("admit", work=wid, kind="rite", name=rite["name"], path=path, author=GEN0_AUTHOR,
+            h.log.append("admit", work=wid, kind=kind, name=rite["name"], path=path, author=GEN0_AUTHOR,
                          monk=None, generation=0, bytes=len(data), sha256=w["sha256"], signature=None,
                          seed=True)
         self.write_catalog()
@@ -394,16 +444,20 @@ class Library:
             if burned is None or burned["status"] != "library":
                 return self._err("no_work")
         rite = rite_kind(filename, data)
+        kind = "rite"
+        if rite is None:
+            rite = table_kind(filename, data)
+            kind = "table" if rite else "text"
         if rite is not None:
             for w in self.in_library():
-                if w["kind"] == "rite" and w["name"] == rite and w is not burned:
+                if w["kind"] == kind and w["name"] == rite and w is not burned:
                     return self._err("admit_rite_held", name=rite)
         quota = int(self.cfg.get("quota_bytes", 24000))
         total = self.total_bytes() - (burned["bytes"] if burned else 0)
         if total + n > quota:
             return self._err("too_large" if burned else "admit_full")
         inner = bool(args.get("inner"))
-        return Reply(True, out=self._swap(monk, path, filename, data, sig, seal, rite, inner, burned))
+        return Reply(True, out=self._swap(monk, path, filename, data, sig, seal, rite, inner, burned, kind))
 
     def _allowed_signers(self, monk: "Monk") -> Path | None:
         kd = self.house.keys_dir(monk.name)
@@ -415,14 +469,14 @@ class Library:
         allowed.write_text(f'{monk.name} namespaces="{NAMESPACE}" {pub}\n')
         return allowed
 
-    def _swap(self, monk, path, filename, data, sig, seal, rite, inner, burned) -> str:
+    def _swap(self, monk, path, filename, data, sig, seal, rite, inner, burned, kind="text") -> str:
         h = self.house
         wid = self._new_id()
         lib_dir = "/library/inner" if inner else "/library/outer"
-        lib_name = f"{rite}.json" if rite else f"{wid}.txt"
+        lib_name = {"rite": f"{rite}.json", "table": f"{rite}.table"}.get(kind, f"{wid}.txt")
         lib_path = f"{lib_dir}/{lib_name}"
         sha = hashlib.sha256(data).hexdigest()
-        w = {"id": wid, "kind": "rite" if rite else "text", "name": rite, "filename": filename, "path": lib_path,
+        w = {"id": wid, "kind": kind, "name": rite, "filename": filename, "path": lib_path,
              "author": monk.name, "author_monk": monk.id, "generation": monk.generation, "bytes": len(data),
              "sha256": sha, "signature": sig, "verified": True, "seed": False, "inner": inner, "seal": seal,
              "status": "library", "store": self._store(wid, filename, data),

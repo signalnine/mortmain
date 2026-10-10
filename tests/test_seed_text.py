@@ -36,6 +36,8 @@ def seed_texts():
         # Rite titles are generation-zero terms; only step text is checked for caps.
         assert rite["title"].isascii() and rite["title"].isupper()
         yield p, "\n".join(s["text"] for s in rite["steps"])
+    for p in sorted((ROOT / "seed" / "tables").glob("*.table")):
+        yield p, p.read_text()
 
 
 def mid_sentence_caps(text):
