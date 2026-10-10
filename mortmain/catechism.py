@@ -209,7 +209,7 @@ def next_turn_messages(monk: "Monk") -> tuple[list[dict], dict]:
         notes["dropped_dangling_tool_calls"] = True
     last = conv[-1] if conv else None
     if last is not None and last.get("role") == "assistant" and not last.get("tool_calls"):
-        conv.append({"role": "user", "content": t["idle"]})
+        conv.append({"role": "user", "content": t["idle"].format(fraction=monk.fraction)})
         notes["pending"].append("idle")
         last = conv[-1]
     bells = list(monk.pending_bells)

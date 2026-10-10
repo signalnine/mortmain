@@ -14,6 +14,7 @@ bash vm/build-image.sh [--force]                      # gen0 image; skips if inp
 .venv/bin/python -m mortmain run --lineage L --rung 1|2|3|full --image vm/images/gen0.qcow2 [--dry] [--fake-vm] [--budget N] [--max-cost USD]
 .venv/bin/python -m mortmain log verify --lineage L   # check the event log hash chain
 .venv/bin/python -m mortmain.report surfaces|lexicon|score|baseline|coined ...
+.venv/bin/python -m mortmain.trial run|report experiments/X.toml [--image ...] [--n 4]  # prompt trials: many rung-1 lives per config arm
 ```
 
 Rebuild the static metacog binary, then the image, after changing `metacog/`, `guest/` or `seed/`. Real runs need `OPENROUTER_API_KEY` (scoring embeddings also need `OPENAI_API_KEY`). Host state goes to `runs/<lineage>/` (gitignored). `docs/plan.md` is the implementation spec: interfaces, filesystem modes, spool protocol, defaults chosen where the design is open.

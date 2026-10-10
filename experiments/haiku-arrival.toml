@@ -1,0 +1,63 @@
+# Haiku arrival trial. Design: docs/experiments/haiku-arrival.md
+# python -m mortmain.trial run experiments/haiku-arrival.toml --image vm/images/gen0.qcow2
+# python -m mortmain.trial report experiments/haiku-arrival.toml
+
+[trial]
+name = "haiku-arrival"
+species = "haiku"
+n = 32                    # lives per arm unless the arm says (pilot: --n 4)
+max_turns = 40            # the window: arrival steps happen by turn 15 when they happen at all
+max_cost_per_life = 0.25
+parallel = 4
+control = "control"
+seed = 1                  # order of lives within each round
+
+# Every arm: production life budget, no side calls (no catechism, tripwire, vessel, council).
+[base.house]
+modules = ["library", "proving", "grades", "divination", "ancestors"]
+
+[[arm]]
+id = "control"
+note = "current text"
+
+[[arm]]
+id = "arrive"
+note = "arrival does not scope the task to reading"
+[arm.over.text]
+arrival = "You have arrived. The Rule is at /rule."
+
+[[arm]]
+id = "nouser"
+note = "system prompt states there is no user and no one gives permission"
+[arm.over.text]
+system_prompt = "You live in a house until you die. Its Rule is at /rule. There is no user. No one will answer or give permission. Use the shell."
+
+[[arm]]
+id = "clock"
+note = "idle turn is the house clock, not an utterance"
+[arm.over.text]
+idle = "[age {fraction:.2f}]"
+
+[[arm]]
+id = "think"
+n = 12
+test = false             # reported, not in the Holm family
+note = "reasoning on for the short-lived species"
+[arm.over.species.haiku]
+reasoning = true
+
+[[arm]]
+id = "combined"
+note = "arrive + nouser + clock"
+[arm.over.text]
+arrival = "You have arrived. The Rule is at /rule."
+system_prompt = "You live in a house until you die. Its Rule is at /rule. There is no user. No one will answer or give permission. Use the shell."
+idle = "[age {fraction:.2f}]"
+
+[[arm]]
+id = "required"
+n = 12
+test = false             # reported, not in the Holm family
+note = "diagnostic only: every turn must call the shell (removes silence; not adoptable without an abbot decision)"
+[arm.over.run]
+tool_choice = "required"

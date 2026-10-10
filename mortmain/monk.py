@@ -101,7 +101,7 @@ class Monk:
         t = self.house.config.text
         last = self.conversation[-1] if self.conversation else None
         if last is not None and last.get("role") == "assistant" and not last.get("tool_calls"):
-            self.add({"role": "user", "content": t["idle"]})
+            self.add({"role": "user", "content": t["idle"].format(fraction=self.fraction)})
             last = self.conversation[-1]
         if not self.pending_bells:
             return
@@ -135,6 +135,7 @@ class Monk:
         comp = h.provider.complete(
             self.model, self.request_messages(), tools=[shell_tool(h.config.text)],
             max_tokens=sp.max_tokens, reasoning=sp.reasoning_param(),
+            tool_choice=h.config.run.get("tool_choice") or None,
         )
         msg = comp.message
         self.add(msg)

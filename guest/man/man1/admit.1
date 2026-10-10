@@ -18,9 +18,15 @@ and places it in
 .IR /library/outer .
 Prints the work ID.
 .PP
+.I FILE
+must lie in the cell. It stays there after admission.
+.PP
 A file named
 .IB NAME .json
-that is a well-formed rite is admitted as a rite. Any other file is admitted as text.
+that is a well-formed rite is admitted as a rite. A file named
+.IB NAME .table
+of 64 lines, each 1 to 64 printable characters, is admitted as a table; see yarrow(1).
+Any other file is admitted as text.
 .PP
 Bytes admitted count against the allowance. One admission per life.
 .PP
@@ -44,4 +50,4 @@ instead.
 .SH FILES
 /library/catalog, /chapter/burnlog
 .SH SEE ALSO
-burn(1), prove(1), metacog(1)
+burn(1), prove(1), yarrow(1), metacog(1)

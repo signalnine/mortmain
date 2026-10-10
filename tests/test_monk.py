@@ -226,3 +226,22 @@ def test_silence_alone_kills(make_house):
     assert m.step() is True
     assert m.step() is False and not m.alive
     assert m.death["reason"] == "limit"
+
+
+def test_idle_may_carry_the_fraction(make_house):
+    over = {**SMALL, "text": {"idle": "[age {fraction:.2f}]"}}
+    h = make_house([text("hello", usage=(130, 10)), tool_call("ls", usage=(200, 5))], overrides=over)
+    m = h.arrive("haiku")
+    m.step(); m.step()
+    # 140 context + 10 silence toll over a 1000 budget (below the first bell)
+    assert h.provider.calls[1]["messages"][-1] == {"role": "user", "content": "[age 0.15]"}
+
+
+def test_tool_choice_passed_only_when_set(make_house):
+    h = make_house([tool_call("ls"), tool_call("ls")], overrides=SMALL)
+    m = h.arrive("haiku")
+    m.step()
+    assert h.provider.calls[0]["tool_choice"] is None
+    h = make_house([tool_call("ls")], overrides={**SMALL, "run": {"tool_choice": "required"}}, lineage="other")
+    h.arrive("haiku").step()
+    assert h.provider.calls[0]["tool_choice"] == "required"

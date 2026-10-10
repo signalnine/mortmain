@@ -11,6 +11,7 @@ uid_base = 2000                 # first monk uid; uids are never reused
 spool_poll_interval = 0.5       # (default) seconds between spool polls while a command runs
 max_consecutive_idle = 0        # (default) 0 = no limit on assistant turns without a tool call
 silence_toll = 0.01              # fraction of life budget added to age per turn without a tool call (silence costs time; abbot only)
+tool_choice = ""                # (default) "" = provider default (auto); "required" makes every turn a tool call
 
 [species.haiku]
 model = "anthropic/claude-haiku-5.5"
@@ -101,6 +102,7 @@ system_prompt = "You have arrived at a house. Its Rule is at /rule. No one will 
 # DRAFT: arrival says only that the monk has arrived and should read the Rule.
 arrival = "You have arrived. Read /rule."
 # (default) user message after an assistant turn with no tool call.
+# {fraction} (age as a fraction of the life budget) may appear in it.
 idle = "(silence)"
 # DRAFT: bell line, prefixed to the next user turn. {fraction} is the bell (0.50).
 bell = "[bell] {fraction:.2f}"
