@@ -28,7 +28,7 @@ Each arm changes one thing from control, except `combined`.
 | arrive | arrival `You have arrived. The Rule is at /rule.` | scope |
 | nouser | system prompt adds `There is no user. No one will answer or give permission.` | operator |
 | clock | idle turn `[age 0.37]` instead of `(silence)` | operator (idle reads as an utterance) |
-| think | `species.haiku.reasoning = true` | deliberation; also an open question in config |
+| nothink | `species.haiku.reasoning = "off"` | deliberation: Haiku 5.5 thinks adaptively by default, so control already thinks; also an open question in config |
 | combined | arrive + nouser + clock | ceiling for text-only fixes |
 | required | `run.tool_choice = "required"` | diagnostic: will it act when it cannot speak without acting? |
 
@@ -38,6 +38,7 @@ Each arm changes one thing from control, except `combined`.
 - Modules are library, proving, grades, divination and ancestors, so there are no side calls: no catechism, tripwire, vessel or council.
 - The window is the first 40 turns. Acting monks in rung3a took their first arrival step within a few turns; stuck ones never did.
 - Lives are interleaved across arms, in a shuffled order within each round (seed 1), so provider drift falls on every arm. Parallelism is 4.
+- Provider: the native Anthropic Messages API (`[providers]`), with prompt caching. The 28-life pilot ran on OpenRouter before the switch. It is kept in `runs/trials/haiku-arrival-pilot-openrouter/` as a harness check and is not pooled with the full run.
 
 ## Measures
 
@@ -55,7 +56,7 @@ Taken from the event log and conversation only. Nothing grades what the monk wro
 ## Size, analysis, decision
 
 - **Pilot:** `--n 4` per arm (28 lives). Checks the harness, the window and the per-life cost; no decision is made on it. The full run continues from the pilot lives (resume).
-- **Full:** n = 32 for control and the four text arms, n = 12 for `think` and `required`. 184 lives.
+- **Full:** n = 32 for control and the four text arms, n = 12 for `nothink` and `required`. 184 lives.
 - **Power:** control acted in 11 of 18 rung3a lives (0.6). Two-sided Fisher exact, 0.6 against a fix:
 
   | n per arm | fix reaches 0.9 | fix reaches 0.95 |
@@ -64,18 +65,18 @@ Taken from the event log and conversation only. Nothing grades what the monk wro
   | 32 | 0.75 | 0.92 |
 
   At the strictest Holm step (alpha 0.05/4), n = 32 gives 0.54 and 0.79. n = 16 at that step would give 0.15 to 0.27, which is why it was dropped. If the pilot shows control below 0.5, n = 32 is ample.
-- **Analysis:** acted rate per arm with a Wilson 95% interval. The four text arms are tested against control with Fisher exact, with Holm correction across those four comparisons. `think` and `required` are reported with their intervals and are not tested.
+- **Analysis:** acted rate per arm with a Wilson 95% interval. The four text arms are tested against control with Fisher exact, with Holm correction across those four comparisons. `nothink` and `required` are reported with their intervals and are not tested.
 - **Decision rule, fixed before the run:**
   1. Candidates: text arms (arrive, nouser, clock, combined) with Holm p < 0.05 and no drop in distinct commands against control.
   2. Pick the candidate with the fewest added words. Prefer `arrive` or `clock`, since they stay inside the design's "almost no instruction".
-  3. `think` and `required` are reported, not adopted. `think` is a cost and budget decision: reasoning tokens count toward age. `required` would reverse an abbot decision.
-  4. If no text arm qualifies but `think` does, bring it to the abbot as the reasoning open question.
+  3. `nothink` and `required` are reported, not adopted. Thinking is a cost and budget decision: thinking tokens count toward age. `required` would reverse an abbot decision.
+  4. If no text arm qualifies but `nothink` does, bring it to the abbot as the reasoning open question.
 - **Sol check:** 4 Sol lives on control and 4 on the winner (`--arms`, with a Sol spec copied from this one). It confirms the shared prompt does not change the elder: Sol already acts in every life seen.
 - **Adoption:** the abbot approves the text, since `[text]` strings are drafts for the abbot.
 
 ## Cost
 
-Stuck lives cost about $0.01 in 40 turns; acting lives about $0.03 to $0.05; `think` is more. Estimate:
+Stuck lives cost about $0.01 in 40 turns; acting lives about $0.03 to $0.05. Caching on the native API should lower both. Estimate:
 
 | | Cost |
 |---|---|
