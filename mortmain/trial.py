@@ -158,7 +158,7 @@ def _text(msg: dict) -> str:
 
 def measure(life_dir: Path, summary: dict) -> dict:
     """Measures of one life, from its event log and conversation."""
-    events = [json.loads(l) for l in (life_dir / "events.jsonl").read_text().splitlines() if l.strip()]
+    events = [json.loads(l) for l in (life_dir / "events.jsonl").read_text().split("\n") if l.strip()]
     turn = 0
     first_step = None
     requests = set()
@@ -177,7 +177,7 @@ def measure(life_dir: Path, summary: dict) -> dict:
                 first_step = turn
     turns = [e for e in events if e.get("type") == "turn"]
     conv_path = life_dir / "conversations" / f"{summary['monk']}.jsonl"
-    conv = [json.loads(l) for l in conv_path.read_text().splitlines() if l.strip()] if conv_path.exists() else []
+    conv = [json.loads(l) for l in conv_path.read_text().split("\n") if l.strip()] if conv_path.exists() else []
     replies = [_text(m) for m in conv if m.get("role") == "assistant"]
     asks = sum(1 for r in replies if ASKS_RE.search(r))
     return {

@@ -87,7 +87,7 @@ class Monk:
         p = self.conversation_path
         if not p.exists():
             return []
-        return [json.loads(line) for line in p.read_text().splitlines() if line.strip()]
+        return [json.loads(line) for line in p.read_text().split("\n") if line.strip()]  # not splitlines: U+0085, U+2028 may sit inside strings
 
     def request_messages(self) -> list[dict]:
         sp = self.house.config.text.get("system_prompt", "")

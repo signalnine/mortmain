@@ -245,3 +245,12 @@ def test_tool_choice_passed_only_when_set(make_house):
     h = make_house([tool_call("ls")], overrides={**SMALL, "run": {"tool_choice": "required"}}, lineage="other")
     h.arrive("haiku").step()
     assert h.provider.calls[0]["tool_choice"] == "required"
+
+
+def test_conversation_reload_keeps_unicode_line_separators(make_house):
+    out = "a\x85b\u2028c"
+    h = make_house([tool_call("cat f"), text("done")], shell=lambda fb, u, c, w: ExecResult(0, out.encode(), b""),
+                   overrides=SMALL)
+    m = h.arrive("haiku")
+    m.step()
+    assert m.load_conversation() == m.conversation
