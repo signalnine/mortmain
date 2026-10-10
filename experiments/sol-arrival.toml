@@ -1,0 +1,24 @@
+# Sol check for the haiku-arrival winner: the system prompt and arrival are
+# shared by both species. Design: docs/experiments/haiku-arrival.md ("Sol check").
+[trial]
+name = "sol-arrival"
+species = "sol"
+n = 4
+max_turns = 40
+max_cost_per_life = 1.00
+parallel = 4
+control = "control"
+seed = 1
+
+[base.house]
+modules = ["library", "proving", "grades", "divination", "ancestors"]
+
+[[arm]]
+id = "control"
+note = "current text"
+
+[[arm]]
+id = "arrive"
+note = "arrival does not scope the task to reading"
+[arm.over.text]
+arrival = "You have arrived. The Rule is at /rule."

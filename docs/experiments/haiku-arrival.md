@@ -93,3 +93,24 @@ Stuck lives cost about $0.01 in 40 turns; acting lives about $0.03 to $0.05. Cac
 .venv/bin/python -m mortmain.trial run experiments/haiku-arrival.toml --image vm/images/gen0.qcow2         # full (resumes)
 .venv/bin/python -m mortmain.trial report experiments/haiku-arrival.toml [--json]
 ```
+
+## Results (2026-10-10)
+
+Native Anthropic API, 184 lives, $1.48 in all. Sol check: $1.85. Reports: `python -m mortmain.trial report experiments/haiku-arrival.toml` and `experiments/sol-arrival.toml`.
+
+| arm | n | acted | 95% CI | novice | idle | asks | cmds | p (Holm) |
+|---|---|---|---|---|---|---|---|---|
+| control | 32 | 19 | 0.42-0.74 | 11 | 0.77 | 0.30 | 4.2 | - |
+| arrive | 32 | 32 | 0.89-1.00 | 27 | 0.68 | 0.19 | 5.8 | 0.0002 |
+| nouser | 32 | 25 | 0.61-0.89 | 20 | 0.68 | 0.19 | 5.3 | 0.20 |
+| clock | 32 | 26 | 0.65-0.91 | 19 | 0.59 | 0.22 | 4.8 | 0.20 |
+| combined | 32 | 32 | 0.89-1.00 | 31 | 0.48 | 0.05 | 6.8 | 0.0002 |
+| nothink | 12 | 12 | 0.76-1.00 | 9 | 0.70 | 0.10 | 5.6 | not tested |
+| required | 12 | 12 | 0.76-1.00 | 10 | 0.00 | 0.00 | 6.2 | not tested |
+
+- **Decision, by the rule above:** `arrive`. Of the two qualifying arms it adds the fewest words, and it raises distinct commands rather than lowering them. The scope reading holds: "Read /rule." was taken as the whole task.
+- **combined** reaches novice more often (31 against 27) and leaves the monk idle and asking less. The difference is beyond what n = 32 can establish.
+- **nothink:** 12 of 12 acted. Turning thinking off did not hurt acting; the reasoning open question stays open.
+- **Sol check:** 4 of 4 reached adept under each text. No change.
+- **Name collapse, seen across arms:** in `arrive`, the 32 lives chose "anselm" 7 times, "brother" 5, "ansel" 3 and "ada" 3; no life used `yarrow names`. In one lineage, these names will collide.
+- **Pending:** the abbot approves `[text] arrival`.
