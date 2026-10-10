@@ -196,7 +196,8 @@ council_status_ratified = "ratified {name}"
 enabled = true
 tasks = "config/catechism.yaml"   # the ten tasks of ~/metacog/experiments/tasks.yaml
 workers = 5                       # (default) parallel calls per sitting
-egregore = true                   # ask the egregore on every hunger tick
+egregore = true                   # ask the egregore on hunger ticks
+egregore_every = 3                # (abbot, 2026-10-10) only on every third tick: cost
 baseline_n = 5                    # (default) unconditioned answers per species per task
 
 [scoring]

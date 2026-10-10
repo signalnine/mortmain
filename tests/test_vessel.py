@@ -195,6 +195,8 @@ def test_consult_both_species_vessel_only(vh):
     assert e["question"] == "what remains?" and e["vessel"] == v.content()
     assert [x["text"] for x in e["answers"]] == [a, b]
     assert {x["species"] for x in e["answers"]} == {"haiku", "sol"}
+    # its model calls are billed to the lineage (state_extras["vessel"]["billed"])
+    assert h.state_extras["vessel"]["billed"]["requests"] == 2
     # free: no charge, does not feed
     h.state_extras["vessel"]["fed"] = False
     v.consult(m, {"question": "again"}, None)

@@ -167,7 +167,7 @@ class FakeVessel:
 
 
 def test_egregore_tick(make_house):
-    h = make_house(overrides=SMALL)
+    h = make_house(overrides=dict(SMALL, catechism={"egregore_every": 1}))
     fp = FakeProvider(default=answering("E"))
     v = FakeVessel("line one\nline two\n")
     h.vessel = v
@@ -217,7 +217,7 @@ def test_baseline_files_and_resume(tmp_path):
 def test_egregore_with_real_vessel(make_house):
     """vessel.py hunger ticks reach the egregore catechism (vessel installed
     after the catechism: found lazily at the next turn)."""
-    h = make_house([tool_call("ls", usage=(100, 20)), tool_call("pwd", usage=(150, 20))], overrides=SMALL)
+    h = make_house([tool_call("ls", usage=(100, 20)), tool_call("pwd", usage=(150, 20))], overrides=dict(SMALL, catechism={"egregore_every": 1}))
     fp = FakeProvider(default=answering("E"))
     cat.install(h, provider=fp, settings={"workers": 1})
     h.install("vessel")
@@ -230,3 +230,22 @@ def test_egregore_with_real_vessel(make_house):
     vessel_txt = (h.run_dir / "catechism" / "egregore" / f"tick-{ticks[-1]['tick']}" / "vessel.txt").read_text()
     assert vessel_txt == h.vessel.text
     assert fp.calls[-1]["messages"][0] == {"role": "system", "content": vessel_txt}
+
+
+def test_egregore_every_third_tick(make_house):
+    h = make_house(overrides=dict(SMALL, catechism={"egregore_every": 3}))
+    fp = FakeProvider(default=answering("E"))
+    v = FakeVessel("line one\n")
+    h.vessel = v
+    cat.install(h, provider=fp)
+    for t in (1, 2):
+        v.tick(t)
+    assert fp.calls == []
+    v.tick(3)
+    assert len(fp.calls) == 20
+    for t in (4, 5):
+        v.tick(t)
+    assert len(fp.calls) == 20
+    v.tick(6)
+    assert len(fp.calls) == 40
+    assert [e["tick"] for e in events(h, "catechism") if e.get("kind") == "egregore"] == [3, 6]

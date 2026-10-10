@@ -313,6 +313,9 @@ class Catechism:
             self.sit(monk, when)
 
     def on_hunger_tick(self, tick: int) -> None:
+        every = max(1, int(self.settings.get("egregore_every", 1)))
+        if tick % every:
+            return
         if self.enabled and self.settings.get("egregore", True) and self.vessel is not None:
             self.egregore(tick, vessel_text(self.vessel))
 

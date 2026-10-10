@@ -292,6 +292,10 @@ class Vessel:
                             "finish": (comp.raw.get("choices") or [{}])[0].get("finish_reason"),
                             "has_reasoning": bool(comp.message.get("reasoning_details")
                                                   or comp.message.get("reasoning"))})
+        from .catechism import add_usage
+        billed = self.state.setdefault("billed", {})
+        for a in answers:
+            add_usage(billed, a["usage"] or {})
         self.state["consults"] += 1
         order = list(range(len(answers)))
         h.rng_for(monk, f"consult-{self.state['consults']}").shuffle(order)

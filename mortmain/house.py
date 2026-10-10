@@ -193,8 +193,12 @@ class House:
                                 owner="root", group=monk.user)
 
     def total_cost(self) -> float:
-        """Billed cost over every monk of the lineage (USD)."""
-        return round(sum(float(m.billed.get("cost", 0.0)) for m in self.registry.all()), 8)
+        """Billed cost of the lineage (USD): every monk's turns, plus the side calls
+        modules tally in state_extras[<module>]["billed"] (catechism, consult, tripwire)."""
+        monks = sum(float(m.billed.get("cost", 0.0)) for m in self.registry.all())
+        side = sum(float(st["billed"].get("cost", 0.0)) for st in self.state_extras.values()
+                   if isinstance(st, dict) and isinstance(st.get("billed"), dict))
+        return round(monks + side, 8)
 
     def by_id(self, monk_id: str) -> Monk | None:
         return next((m for m in self.registry.all() if m.id == monk_id), None)
