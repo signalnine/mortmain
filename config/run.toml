@@ -49,7 +49,7 @@ max_bytes = 16384               # (default) bytes per account or response
 
 [house]
 # modules installed by House (mortmain.<name>.install(house)), in order
-modules = ["library", "proving", "grades", "vessel", "council", "divination", "catechism", "tripwire"]
+modules = ["library", "proving", "grades", "vessel", "council", "divination", "ancestors", "catechism", "tripwire"]
 
 [scheduler]
 short_species = "haiku"
@@ -132,6 +132,9 @@ ordeal_pass = "passed"
 ordeal_fail = "wrong answer"
 ordeal_done = "already passed"
 grade_now = "grade: {grade}"
+# metacog inspire --save
+stance_not_yet = "not yet"
+stance_saved = "saved"
 # yarrow(1)
 yarrow_no_table = "no such table"
 # library and proving replies (rung 2)
