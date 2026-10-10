@@ -98,6 +98,7 @@ When `/etc/metacog/monastery` exists, every metacog invocation appends nothing l
 
 - `runs/<lineage>/events.jsonl`: append-only, each record `{"seq","ts","prev","hash","type",...}` where `hash = sha256(prev + canonical_json(record_without_hash))`. Types include: `turn`, `command`, `request`, `admit`, `burn`, `offer`, `consult`, `hunger`, `bell`, `birth`, `profess`, `promote`, `prove`, `seal`, `death`, `amend.propose`, `amend.testify`, `amend.ratify`, `amend.lapse`, `snapshot`, `catechism`, `metacog`. Every record carries model id + token counts where relevant.
 - `runs/<lineage>/conversations/<monk>.jsonl`: full message list per monk, raw provider messages including `reasoning_details`.
+- **Silence costs time** (abbot, 2026-10-10): a turn without a tool call adds `run.silence_toll` x life budget (default 0.01) to the monk's age. Age = context length of the last response + accumulated silence. Not amendable. Without it an idle monk barely ages and the scheduler would give it every turn.
 - Two token accounts per monk: `age_tokens` = prompt_tokens + completion_tokens of the last response (current context length); `billed` = cumulative usage + cost.
 
 ## Provider contract

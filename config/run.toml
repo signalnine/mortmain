@@ -10,6 +10,7 @@ short_lives_per_elder = 3       # scheduler: elder life ~ 3 short lives
 uid_base = 2000                 # first monk uid; uids are never reused
 spool_poll_interval = 0.5       # (default) seconds between spool polls while a command runs
 max_consecutive_idle = 0        # (default) 0 = no limit on assistant turns without a tool call
+silence_toll = 0.01              # fraction of life budget added to age per turn without a tool call (silence costs time; abbot only)
 
 [species.haiku]
 model = "anthropic/claude-haiku-5.5"

@@ -17,14 +17,15 @@ def test_accounting_age_vs_billed(make_house):
     m = h.arrive("haiku")
     for _ in range(3):
         assert m.step()
-    assert m.age_tokens == 210                     # last response only: current context
+    assert m.age_tokens == 210 + 10                # current context + toll for one silent turn (0.01 x 1000)
     assert m.billed["prompt_tokens"] == 450
     assert m.billed["completion_tokens"] == 60
     assert m.billed["tokens"] == 510               # cumulative
     assert m.billed["cost"] == 0.5
     assert m.billed["requests"] == 3
     turns = [r for r in _events(h) if r["type"] == "turn"]
-    assert [t["age"] for t in turns] == [120, 180, 210]
+    assert [t["age"] for t in turns] == [120, 180, 220]
+    assert [t["context"] for t in turns] == [120, 180, 210]
     assert turns[0]["model"] == "anthropic/claude-haiku-5.5"
 
 
@@ -199,3 +200,29 @@ def test_state_roundtrip(make_house, tmp_path):
         assert h2.registry.used_uids == {m.uid}
     finally:
         h2.close()
+
+
+def test_silence_costs_time(make_house):
+    # budget 1000, toll 0.1 of life per silent turn: each text-only turn ages the monk by 100
+    over = dict(SMALL, run={"silence_toll": 0.1})
+    h = make_house([text("waiting", usage=(10, 5)), text("waiting", usage=(12, 5)),
+                    tool_call("ls", usage=(30, 5))], overrides=over)
+    m = h.arrive("haiku")
+    m.step()
+    assert m.silence_tokens == 100 and m.age_tokens == 15 + 100
+    m.step()
+    assert m.silence_tokens == 200 and m.age_tokens == 17 + 200
+    m.step()  # acting does not refund silence
+    assert m.silence_tokens == 200 and m.age_tokens == 35 + 200
+    turns = [e for e in _events(h) if e["type"] == "turn"]
+    assert [t["silence"] for t in turns] == [100, 200, 200]
+    assert [t["context"] for t in turns] == [15, 17, 35]
+
+
+def test_silence_alone_kills(make_house):
+    over = dict(SMALL, run={"silence_toll": 0.5})
+    h = make_house([text("waiting", usage=(10, 5))] * 3, overrides=over)
+    m = h.arrive("haiku")
+    assert m.step() is True
+    assert m.step() is False and not m.alive
+    assert m.death["reason"] == "limit"

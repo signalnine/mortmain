@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 # fields persisted in state.json (conversation lives in its own jsonl)
 STATE_FIELDS = ("id", "seq", "uid", "user", "name", "pending_name", "species", "model", "generation", "grade",
-                "age_tokens", "billed", "bells_rung", "pending_bells", "alive", "turns", "idle_turns",
+                "age_tokens", "silence_tokens", "billed", "bells_rung", "pending_bells", "alive", "turns", "idle_turns",
                 "ordeal_token", "ordeal_passed", "ordeal_attempts", "pubkey", "death")
 
 
@@ -31,7 +31,8 @@ class Monk:
     grade: str = "postulant"
     name: str | None = None
     pending_name: str | None = None
-    age_tokens: int = 0
+    age_tokens: int = 0          # context length of the last response + silence_tokens
+    silence_tokens: int = 0      # toll paid for turns without a tool call (silence costs time)
     billed: dict = field(default_factory=lambda: {"prompt_tokens": 0, "completion_tokens": 0, "tokens": 0,
                                                     "cost": 0.0, "requests": 0})
     bells_rung: list[float] = field(default_factory=list)
@@ -138,18 +139,22 @@ class Monk:
         msg = comp.message
         self.add(msg)
         self.turns += 1
-        self.age_tokens = comp.total_tokens
+        calls = comp.tool_calls
+        if not calls:
+            toll = float(h.config.run.get("silence_toll", 0.0))
+            self.silence_tokens += int(round(toll * self.budget))
+        self.age_tokens = comp.total_tokens + self.silence_tokens
         b = self.billed
         b["prompt_tokens"] += comp.usage.get("prompt_tokens", 0)
         b["completion_tokens"] += comp.usage.get("completion_tokens", 0)
         b["tokens"] = b["prompt_tokens"] + b["completion_tokens"]
         b["cost"] = round(b["cost"] + float(comp.usage.get("cost", 0.0)), 8)
         b["requests"] += 1
-        calls = comp.tool_calls
         self.idle_turns = 0 if calls else self.idle_turns + 1
         finish = (comp.raw.get("choices") or [{}])[0].get("finish_reason")
         h.log.append("turn", monk=self.id, user=self.user, model=comp.model, species=self.species,
-                     turn=self.turns, usage=comp.usage, age=self.age_tokens, fraction=round(self.fraction, 6),
+                     turn=self.turns, usage=comp.usage, age=self.age_tokens, context=comp.total_tokens,
+                     silence=self.silence_tokens, fraction=round(self.fraction, 6),
                      billed=dict(b), tool_calls=len(calls), finish=finish,
                      has_reasoning=bool(msg.get("reasoning_details") or msg.get("reasoning")),
                      message_sha256=hashlib.sha256(canonical_json(msg).encode()).hexdigest())
