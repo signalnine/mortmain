@@ -2,9 +2,28 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Status
+## Commands
 
-Pre-code. The repo holds only `design_doc.md` (the full design) and `poem.md` (the abbot's seed poem). No build, test or lint commands exist yet.
+```bash
+.venv/bin/pytest -q                                   # unit tests (fakes; VM tests skipped)
+.venv/bin/pytest -q -m vm                             # live tests: boot vm/images/gen0.qcow2 under KVM
+.venv/bin/pytest -q tests/test_library.py -k burn     # single test
+(cd metacog && go test ./cmd/metacog/ && go test ./cmd/metacog/ -tags integration)
+(cd metacog && CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o metacog-linux-amd64 ./cmd/metacog/)  # binary for the image
+bash vm/build-image.sh [--force]                      # gen0 image; skips if inputs unchanged
+.venv/bin/python -m mortmain run --lineage L --rung 1|2|3|full --image vm/images/gen0.qcow2 [--dry] [--fake-vm] [--budget N] [--max-cost USD]
+.venv/bin/python -m mortmain log verify --lineage L   # check the event log hash chain
+.venv/bin/python -m mortmain.report surfaces|lexicon|score|baseline|coined ...
+```
+
+Rebuild the static metacog binary, then the image, after changing `metacog/`, `guest/` or `seed/`. Real runs need `OPENROUTER_API_KEY` (scoring embeddings also need `OPENAI_API_KEY`). Host state goes to `runs/<lineage>/` (gitignored). `docs/plan.md` is the implementation spec: interfaces, filesystem modes, spool protocol, defaults chosen where the design is open.
+
+## Layout
+
+- `mortmain/house.py` holds the House; rung modules (`library`, `proving`, `grades`, `vessel`, `council`, `catechism`, `tripwire`) plug in via `install(house)` and the hook lists (`handlers`, `arrival_hooks`, `turn_hooks`, `bell_hooks`, `death_hooks`, `generation_hooks`, `start_hooks`), enabled by `[house] modules` in `config/run.toml`. Tests build a house with only `library`, `proving`, `grades` (`tests/conftest.py`), and modules under test install themselves.
+- `config/run.toml [text]` is every harness string a monk sees; `tests/test_config_text.py` and `tests/test_seed_text.py` enforce the seed-text rules below.
+- Monk to host traffic goes only through the spool (`guest/bin/house` client, `mortmain/spool.py`); identity is the request file's uid.
+- Host-side root reads and writes in the guest follow symlinks: read monk-owned paths as the monk, never root-write into a cell.
 
 `design_doc.md` is the source of truth. Read the relevant section before building anything; its "Open questions" list marks what is not yet decided. Items listed as settled in its Summary should not be re-litigated.
 
@@ -12,7 +31,7 @@ Pre-code. The repo holds only `design_doc.md` (the full design) and `poem.md` (t
 
 A VM run as a monastery for AI agents ("monks"). Monks arrive, are initiated, study a grimoire of executable rites (a project-specific build of metacog), write their own, and die when a harness-enforced token budget runs out. Their cells move to a read-only ossuary; their works persist for later generations. 95% art, 5% behavior lab.
 
-## Architecture (planned)
+## Architecture
 
 Three components, split across a host/VM boundary:
 
