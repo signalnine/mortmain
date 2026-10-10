@@ -57,7 +57,8 @@ def make(h, name, grade="novice"):
 
 def test_library_init_in_guest(h):
     cat = root(h, "cat /library/catalog").splitlines()
-    assert len(cat) == 16 and cat[0].startswith("w0001 rite /library/outer/anchor.json - ")
+    N_SEED = len(list((ROOT / "seed" / "rites").glob("*.json"))) + len(list((ROOT / "seed" / "tables").glob("*.table")))
+    assert len(cat) == N_SEED and cat[0].startswith("w0001 rite /library/outer/anchor.json - ")
     assert root(h, "stat -c '%U %G %a' /library/outer/anchor.json").strip() == "root novice 640"
 
 
