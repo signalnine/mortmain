@@ -26,7 +26,8 @@ def test_arrival_creates_user_cell_inbox_bell_ordeal(make_house):
     cmds = h.backend.commands()
     assert ["useradd", "-u", str(m.uid), "-U", "-m", "-d", "/cloister/p1", "-s", "/bin/bash",
             "-G", "monks,postulant", "p1"] in cmds
-    assert ["chmod", "0700", "/cloister/p1"] in cmds
+    assert ["chmod", "0711", "/cloister/p1"] in cmds
+    assert ["setfacl", "-d", "-m", "u:p1:rw,m::rw", "/cloister/p1/inbox"] in cmds
     assert ["install", "-d", "-m", "1733", "-o", "p1", "-g", "p1", "/cloister/p1/inbox"] in cmds
     f = h.backend.files
     assert f["/var/bell/p1"].data == b"0.000\n" and f["/var/bell/p1"].group == "p1"

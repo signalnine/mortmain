@@ -51,7 +51,7 @@ runs/<lineage>/     per-run host state: events.jsonl, conversations/, catechism/
 ```
 /rule                         root:root 0644      the Rule
 /cloister/                    root:root 0755
-/cloister/<name>/             <user>:<user> 0700  cell (home dir)
+/cloister/<name>/             <user>:<user> 0711  cell (home dir): others reach inbox/, cannot list
 /cloister/<name>/inbox/       <user>:<user> 1733  drop box: others write, cannot list
 /library/outer/               root:novice 0750, files 0640
 /library/inner/               root:adept 0750, files 0640

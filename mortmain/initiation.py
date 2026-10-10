@@ -161,8 +161,10 @@ class Initiation:
         u, home = monk.user, monk.home
         h.root(["useradd", "-u", str(monk.uid), "-U", "-m", "-d", home, "-s", "/bin/bash",
                 "-G", "monks,postulant", u])
-        h.root(["chmod", "0700", home])
+        h.root(["chmod", "0711", home])
         h.root(["install", "-d", "-m", "1733", "-o", u, "-g", u, f"{home}/inbox"])
+        # notes dropped by others stay readable by the owner whatever the sender's umask
+        h.root(["setfacl", "-d", "-m", f"u:{u}:rw,m::rw", f"{home}/inbox"])
         h.root(["install", "-d", "-m", "0700", "-o", u, "-g", u, f"{home}/ordeal"])
         oc = h.config.section("ordeal")
         o = generate_ordeal(h.rng_for(monk, "ordeal"), dirs=oc.get("dirs", 24), files=oc.get("files", 120),

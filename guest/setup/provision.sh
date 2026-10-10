@@ -67,8 +67,8 @@ usermod -s /usr/sbin/nologin root 2>/dev/null || true
 : > /etc/securetty 2>/dev/null || true
 
 # useradd defaults for monk accounts created later by the harness.
-sed -i -E 's/^#?\s*HOME_MODE\s.*/HOME_MODE\t0700/' /etc/login.defs
-grep -q '^HOME_MODE' /etc/login.defs || printf 'HOME_MODE\t0700\n' >> /etc/login.defs
+sed -i -E 's/^#?\s*HOME_MODE\s.*/HOME_MODE\t0711/' /etc/login.defs
+grep -q '^HOME_MODE' /etc/login.defs || printf 'HOME_MODE\t0711\n' >> /etc/login.defs
 sed -i -E 's/^#?\s*UMASK\s.*/UMASK\t\t077/' /etc/login.defs
 cat > /etc/default/useradd <<'EOF'
 SHELL=/bin/bash
