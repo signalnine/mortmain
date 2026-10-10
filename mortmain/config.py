@@ -19,12 +19,15 @@ class Species:
     role: str
     life_budget: int
     max_tokens: int
-    reasoning: bool
+    reasoning: bool | str
 
     def reasoning_param(self) -> dict | None:
-        """OpenRouter `reasoning` request field."""
-        # off -> omit the field: the provider default for these models is no thinking
-        return {"enabled": True} if self.reasoning else None
+        """The `reasoning` request field (OpenRouter form; native providers map it).
+        true: on. "off": explicitly off. false: omitted, the provider default
+        (Haiku 5.5 thinks adaptively by default)."""
+        if self.reasoning == "off":
+            return {"enabled": False}
+        return {"enabled": True} if self.reasoning is True else None
 
 
 @dataclass
@@ -89,6 +92,12 @@ def _merge(dst: dict, src: dict) -> None:
             dst[k] = v
 
 
+def _reasoning(v) -> bool | str:
+    if v in (True, False, "off"):
+        return v
+    raise ValueError(f"reasoning must be true, false or \"off\", not {v!r}")
+
+
 def from_dict(raw: dict) -> Config:
     species = {
         name: Species(
@@ -97,7 +106,7 @@ def from_dict(raw: dict) -> Config:
             role=s.get("role", "short"),
             life_budget=int(s["life_budget"]),
             max_tokens=int(s["max_tokens"]),
-            reasoning=bool(s.get("reasoning", False)),
+            reasoning=_reasoning(s.get("reasoning", False)),
         )
         for name, s in raw["species"].items()
     }

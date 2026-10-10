@@ -39,12 +39,12 @@ note = "idle turn is the house clock, not an utterance"
 idle = "[age {fraction:.2f}]"
 
 [[arm]]
-id = "think"
+id = "nothink"
 n = 12
 test = false             # reported, not in the Holm family
-note = "reasoning on for the short-lived species"
+note = "thinking off (Haiku 5.5 thinks adaptively by default, so control thinks)"
 [arm.over.species.haiku]
-reasoning = true
+reasoning = "off"
 
 [[arm]]
 id = "combined"

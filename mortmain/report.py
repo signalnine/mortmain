@@ -58,10 +58,10 @@ def cmd_score(args) -> int:
 
 def cmd_baseline(args) -> int:
     from .catechism import baseline
-    from .providers import OpenRouterProvider
+    from .providers import make_provider
     cfg = config_mod.load(args.config)
     n = args.n or int(cfg.section("catechism").get("baseline_n", 5))
-    res = baseline(cfg, OpenRouterProvider(), _runs(args), species=args.species or None, n=n,
+    res = baseline(cfg, make_provider(cfg), _runs(args), species=args.species or None, n=n,
                    workers=int(cfg.section("catechism").get("workers", 5)),
                    log=lambda s: print(s, file=sys.stderr))
     print(json.dumps(res, indent=1))

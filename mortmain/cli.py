@@ -53,8 +53,8 @@ def cmd_run(args) -> int:
         from .fakes import FakeProvider
         provider = FakeProvider(default=dry_script_default)
     else:
-        from .providers import OpenRouterProvider
-        provider = OpenRouterProvider()
+        from .providers import make_provider
+        provider = make_provider(cfg)
     if args.fake_vm:
         from .fakes import FakeBackend
         backend = FakeBackend()

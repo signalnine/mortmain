@@ -18,7 +18,7 @@ model = "anthropic/claude-haiku-5.5"
 role = "short"
 life_budget = 80000             # tokens of own context; death at the limit
 max_tokens = 4096               # (default) per turn
-reasoning = false               # (default) open question: thinking for short-lived monks
+reasoning = false               # (default) open question. false = provider default (Haiku 5.5: adaptive thinking); true = on; "off" = disabled
 
 [species.sol]
 model = "openai/gpt-6.1-sol"
@@ -26,6 +26,35 @@ role = "elder"
 life_budget = 250000
 max_tokens = 8192               # (default) per turn
 reasoning = true                # always reasons; request reasoning_details back
+
+[providers]
+# Model prefix -> provider: "anthropic" (Messages API; ANTHROPIC_API_KEY or
+# ANTHROPIC_KEY, plus ANTHROPIC_WORKSPACE_ID for a key not scoped to a
+# workspace), "openai" (Responses API; OPENAI_API_KEY) or "openrouter"
+# (OPENROUTER_API_KEY). The scoring judge stays on OpenRouter (scoring.py).
+anthropic = "anthropic"
+openai = "openai"
+
+# USD per million tokens, by native model id. Native APIs report no cost; the
+# cost caps use these. Input/output fitted exactly to OpenRouter bills
+# (rung3a, 2026-10-10); Anthropic cache rates are the usual 0.1x read and
+# 1.25x write (assumed, not yet seen on a bill).
+[prices.claude-haiku-5-5]
+input = 0.10
+output = 0.50
+cache_read = 0.01
+cache_write = 0.125
+
+[prices.claude-haiku-4-5]
+input = 1.00
+output = 5.00
+cache_read = 0.10
+cache_write = 1.25
+
+[prices."gpt-6.1-sol"]
+input = 2.50
+output = 10.00
+cache_read = 0.10
 
 [bell]
 fractions = [0.25, 0.5, 0.75, 0.85, 0.95]
