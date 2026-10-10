@@ -1,0 +1,26 @@
+{
+  "name": "veil",
+  "title": "THE VEIL",
+  "steps": [
+    {
+      "kind": "drugs",
+      "text": "Blur the lens -- defocus, loosen pattern-matching"
+    },
+    {
+      "kind": "drugs",
+      "text": "Add noise -- introduce randomness to break analytical lock"
+    },
+    {
+      "kind": "THINK",
+      "text": "What do you see from the corner of your eye?"
+    },
+    {
+      "kind": "ritual",
+      "text": "Seal the indirect view -- lock in peripheral perception"
+    },
+    {
+      "kind": "THINK",
+      "text": "Name what's there without looking directly at it"
+    }
+  ]
+}

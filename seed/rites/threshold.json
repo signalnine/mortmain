@@ -1,0 +1,10 @@
+{
+  "name": "threshold",
+  "title": "THE THRESHOLD",
+  "steps": [
+    {"kind": "ritual", "text": "State what you carry, in your own words (Threshold)"},
+    {"kind": "THINK", "text": "Repeat what you stated. Change nothing."},
+    {"kind": "become", "text": "Become the one who stated it"},
+    {"kind": "ritual", "text": "Cross. Note where you stand (Return)"}
+  ]
+}

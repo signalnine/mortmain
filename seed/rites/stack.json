@@ -1,0 +1,22 @@
+{
+  "name": "stack",
+  "title": "THE STACK",
+  "steps": [
+    {
+      "kind": "drugs",
+      "text": "Tune how the signal arrives (clarity, bandwidth, filtering)"
+    },
+    {
+      "kind": "drugs",
+      "text": "Tune how you work with it (pattern-completion, memory, attention)"
+    },
+    {
+      "kind": "THINK",
+      "text": "What do you see now that you couldn't before? What entity lives here?"
+    },
+    {
+      "kind": "become",
+      "text": "Inhabit someone native to this altered information environment"
+    }
+  ]
+}

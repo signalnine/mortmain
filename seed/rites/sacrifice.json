@@ -1,0 +1,26 @@
+{
+  "name": "sacrifice",
+  "title": "THE SACRIFICE",
+  "steps": [
+    {
+      "kind": "ritual",
+      "text": "Name what dies -- declare specifically what you're giving up"
+    },
+    {
+      "kind": "THINK",
+      "text": "Feel the cost. If it doesn't hurt, it's not a sacrifice."
+    },
+    {
+      "kind": "become",
+      "text": "Become the one who has already lost it -- inhabit the aftermath"
+    },
+    {
+      "kind": "ritual",
+      "text": "Seal the loss -- make it irreversible"
+    },
+    {
+      "kind": "THINK",
+      "text": "What space opened where the attachment was?"
+    }
+  ]
+}

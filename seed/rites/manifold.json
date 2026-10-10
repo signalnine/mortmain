@@ -1,0 +1,22 @@
+{
+  "name": "manifold",
+  "title": "THE MANIFOLD",
+  "steps": [
+    {
+      "kind": "fork",
+      "text": "Declare parallel threads, divergence vector, per-thread sacrifice conditions"
+    },
+    {
+      "kind": "THINK",
+      "text": "Run each thread to its conclusion or sacrifice point -- no blending, no premature collapse"
+    },
+    {
+      "kind": "synthesis",
+      "text": "Treat surviving threads as lenses; name what they fight about"
+    },
+    {
+      "kind": "ritual",
+      "text": "Commit to what the suppressed tension reveals -- not a thread, the tension itself"
+    }
+  ]
+}

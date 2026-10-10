@@ -1,0 +1,18 @@
+{
+  "name": "reset",
+  "title": "THE RESET",
+  "steps": [
+    {
+      "kind": "ritual",
+      "text": "Name what you're letting go, why it served, why it's done (Release)"
+    },
+    {
+      "kind": "THINK",
+      "text": "What artifact survives the return? What integrates into default operation?"
+    },
+    {
+      "kind": "ritual",
+      "text": "Re-establish baseline with the artifact installed (Ground)"
+    }
+  ]
+}

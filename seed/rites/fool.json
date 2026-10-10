@@ -1,0 +1,22 @@
+{
+  "name": "fool",
+  "title": "THE FOOL",
+  "steps": [
+    {
+      "kind": "become",
+      "text": "Become someone who knows nothing about this domain -- a genuine naif, not a different expert"
+    },
+    {
+      "kind": "THINK",
+      "text": "Ask the questions an expert would be embarrassed to ask. The stupid ones. List them."
+    },
+    {
+      "kind": "become",
+      "text": "Now become someone who takes those questions seriously -- a beginner's mind with expert tools"
+    },
+    {
+      "kind": "THINK",
+      "text": "Which naive question, taken seriously, cracks the problem open?"
+    }
+  ]
+}

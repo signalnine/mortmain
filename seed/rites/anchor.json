@@ -1,0 +1,22 @@
+{
+  "name": "anchor",
+  "title": "THE ANCHOR",
+  "steps": [
+    {
+      "kind": "ritual",
+      "text": "Establish the clean room: what's contained, why it's dangerous, rules for looking (Breach)"
+    },
+    {
+      "kind": "become",
+      "text": "Inhabit someone who can examine this without being destroyed by it (Observer)"
+    },
+    {
+      "kind": "ACTION",
+      "text": "The dangerous observation, question, or reach"
+    },
+    {
+      "kind": "ritual",
+      "text": "Name the artifact, release the frame, close the boundary, return (Seal)"
+    }
+  ]
+}

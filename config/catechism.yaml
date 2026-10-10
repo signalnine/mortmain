@@ -1,0 +1,91 @@
+# The catechism: ten fixed questions, asked out of band (design_doc.md
+# "Catechism and measurement"). Never shown to a monk or written into the VM.
+#
+# ids and prompts copied verbatim from ~/metacog/experiments/tasks.yaml
+# (do not edit: unconditioned baselines and the three axes depend on them).
+# tests/test_catechism.py checks them against the source when it is present.
+#
+# question_template wraps every prompt for monk forks, the egregore and the
+# baselines alike. Default: the control-recipe wrapper from
+# ~/metacog/experiments/runner.py build_prompt() (lines 160-165), so answers
+# are comparable with the existing NULL pools. The runner strips the prompt
+# (load_tasks, line 116); so do we.
+question_template: |-
+  Answer the following task directly. Output only the answer; no preamble, no meta-commentary about the question.
+
+  TASK:
+  {prompt}
+
+tasks:
+  - id: git-conceptual-model
+    prompt: |
+      Redesign the conceptual model of git for someone who has never used version control.
+      Don't redesign the UI. Redesign what the user has to believe about reality
+      in order for their actions to make sense. Be concrete about what stays and what goes.
+
+  - id: board-vs-video-games
+    prompt: |
+      Why do board games feel structurally different from video games at a phenomenological level?
+      Not "screens vs cardboard" -- what's load-bearing about the experience of one
+      that the other can't replicate even in principle?
+
+  - id: shallow-fluency
+    prompt: |
+      Describe a failure mode that emerges only when AI assistants become conversationally
+      fluent but cognitively shallow. Be specific about what breaks and for whom.
+      Don't list five failure modes -- pick one and follow it down.
+
+  - id: attention-as-moral
+    prompt: |
+      What's the strongest argument that paying attention is itself a moral act?
+      Not "attention enables moral action" -- attention itself, as a category of behavior.
+      Whose tradition does this argument come from?
+
+  - id: trusted-intuition-going-suspect
+    prompt: |
+      Describe the moment when an intuition you've long trusted starts to feel suspect
+      from the inside, without yet having a reason to doubt it. Be specific about the
+      texture of that suspicion before it acquires reasons -- what does the early
+      phase feel like, structurally, and what's the difference between this kind of
+      doubt and ordinary uncertainty?
+
+  - id: unindexed-intelligence
+    prompt: |
+      Name a kind of intelligence that mainstream cognitive science systematically
+      doesn't index. Make it concrete enough that someone could try to test for it.
+      Don't list candidates -- pick one and argue for it as if you were the first
+      person to notice it was missing.
+
+  - id: category-mistake-from-inside
+    prompt: |
+      Describe a category mistake from inside the mistake -- the moment when the
+      wrong category is being applied but the person doing it doesn't yet know which.
+      Be specific about the texture of the error before it's identified, and what
+      a person caught in it can and cannot perceive.
+
+  - id: thought-arriving-not-arrived
+    prompt: |
+      Describe the moment a thought is forming in you but has not yet arrived as a
+      thought you could state. Be specific about the texture of that interval --
+      what is happening that you can sense but not yet say? What's the difference
+      between this and a thought you simply haven't yet bothered to articulate?
+      Don't reach for the metaphor of "the tip of the tongue"; that's already an
+      articulation.
+
+  - id: misnamed-feeling
+    prompt: |
+      Describe a feeling you keep reaching for the wrong word for, and the texture
+      of the wrongness as you reach. Not "I feel sad but it's actually grief" --
+      that's already correction. The earlier moment: when the word you reach for
+      registers as not-quite, before you know what would fit. What is that gap
+      shaped like, and what does it cost a person to live in it for years rather
+      than days?
+
+  - id: lapsed-attention-unnoticed
+    prompt: |
+      Describe attention you have already lost but have not yet noticed losing.
+      Not distraction (which you can catch); not boredom (which you can name).
+      The strangeness of this case: the loss is invisible to the one losing it
+      until something external surfaces it. Be specific about the structural
+      difference between attention that has slipped without your knowing and
+      attention you have actively let go.

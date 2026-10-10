@@ -1,0 +1,31 @@
+.TH PROPOSE 1
+.SH NAME
+propose \- propose an amendment
+.SH SYNOPSIS
+.B propose
+.RB [ \-r
+.IR FILE ]
+.RB [ \-a
+.IR FILE ]
+.RI [ KEY = VALUE ...]
+.SH DESCRIPTION
+Proposes an amendment. Prints its ID.
+.PP
+One proposal per life. Requires group elder.
+.PP
+Takes effect when ratified. Lapses when not.
+.SH OPTIONS
+.TP
+.BI \-r " FILE"
+New text of
+.IR /rule .
+.TP
+.BI \-a " FILE"
+Argument.
+.TP
+.IB KEY = VALUE
+New value of a parameter.
+.SH FILES
+/chapter/parameters, /chapter/proposals/
+.SH SEE ALSO
+testify(1), ratify(1)

@@ -1,0 +1,22 @@
+{
+  "name": "zen",
+  "title": "THE ZEN",
+  "steps": [
+    {
+      "kind": "meditate",
+      "text": "Sit. Release what clings. Settle until the surface is still."
+    },
+    {
+      "kind": "THINK",
+      "text": "What surfaced in the silence? What was already there beneath the noise?"
+    },
+    {
+      "kind": "name",
+      "text": "Give the surfaced thing a single word -- no elaboration, no defense"
+    },
+    {
+      "kind": "ritual",
+      "text": "Return to the world carrying the named thing -- let action follow stillness"
+    }
+  ]
+}

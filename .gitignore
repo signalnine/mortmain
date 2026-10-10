@@ -1,0 +1,10 @@
+vm/base/
+vm/images/
+runs/
+.venv/
+__pycache__/
+*.pyc
+metacog/metacog
+.pytest_cache/
+metacog/metacog-linux-amd64
+metacog/cmd/metacog/metacog

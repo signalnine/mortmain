@@ -1,0 +1,184 @@
+#!/usr/bin/python3
+# In-VM client for host-mediated commands. Installed once as
+# /usr/local/bin/house and linked under each command name; dispatches on argv[0].
+# Protocol: docs/plan.md "Spool protocol". Stdlib only.
+import json
+import os
+import subprocess
+import sys
+import time
+import uuid
+
+SPOOL = os.environ.get("MORTMAIN_SPOOL", "/var/spool/mortmain")
+POLL = 0.2
+WAIT = 120.0
+KEY = os.path.expanduser("~/.ssh/id_ed25519")
+
+
+def die(cmd, msg):
+    sys.stderr.write("%s: %s\n" % (cmd, msg))
+    sys.exit(1)
+
+
+def read_file(cmd, path, limit=65536):
+    try:
+        with open(path, "rb") as f:
+            data = f.read(limit + 1)
+    except OSError as e:
+        die(cmd, "%s: %s" % (path, e.strerror))
+    if len(data) > limit:
+        die(cmd, "%s: too large" % path)
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        die(cmd, "%s: not text" % path)
+
+
+def sign(cmd, path):
+    if not os.path.exists(KEY):
+        die(cmd, "no key at ~/.ssh/id_ed25519")
+    sig = path + ".sig"
+    if os.path.exists(sig):
+        os.unlink(sig)
+    r = subprocess.run(["ssh-keygen", "-q", "-Y", "sign", "-n", "mortmain", "-f", KEY, path],
+                       stdin=subprocess.DEVNULL, capture_output=True)
+    if r.returncode != 0:
+        die(cmd, "sign failed: " + r.stderr.decode(errors="replace").strip())
+    return read_file(cmd, sig)
+
+
+def request(cmd, args):
+    rid = str(uuid.uuid4())
+    req_dir = os.path.join(SPOOL, "req")
+    tmp = os.path.join(req_dir, "." + rid + ".tmp")
+    body = json.dumps({"v": 1, "cmd": cmd, "args": args, "cwd": os.getcwd()})
+    try:
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w") as f:
+            f.write(body)
+        os.rename(tmp, os.path.join(req_dir, rid + ".json"))
+    except OSError as e:
+        die(cmd, "spool: " + e.strerror)
+    resp = os.path.join(SPOOL, "resp", rid + ".json")
+    deadline = time.monotonic() + WAIT
+    while time.monotonic() < deadline:
+        try:
+            with open(resp) as f:
+                r = json.load(f)
+        except (OSError, ValueError):
+            time.sleep(POLL)
+            continue
+        try:
+            os.unlink(resp)
+        except OSError:
+            pass
+        if r.get("out"):
+            sys.stdout.write(r["out"].rstrip("\n") + "\n")
+        if r.get("err"):
+            sys.stderr.write("%s: %s\n" % (cmd, r["err"].rstrip("\n")))
+        sys.exit(0 if r.get("ok") else 1)
+    die(cmd, "no answer")
+
+
+def usage(cmd, synopsis):
+    die(cmd, "usage: " + synopsis)
+
+
+def main():
+    cmd = os.path.basename(sys.argv[0])
+    a = sys.argv[1:]
+
+    if cmd == "burn":
+        # burn ID FILE [-s FILE] [-i]  ==  admit FILE -b ID [-s FILE] [-i]
+        if len(a) < 2:
+            usage(cmd, "burn ID FILE [-s FILE] [-i]")
+        cmd, a = "admit", [a[1], "-b", a[0]] + a[2:]
+
+    if cmd == "profess":
+        if len(a) != 1:
+            usage(cmd, "profess NAME")
+        if not os.path.exists(KEY + ".pub"):
+            die(cmd, "no key at ~/.ssh/id_ed25519.pub")
+        pub = read_file(cmd, KEY + ".pub").strip()
+        request(cmd, {"name": a[0], "pubkey": pub})
+
+    elif cmd == "ordeal":
+        if a:
+            usage(cmd, "ordeal")
+        request(cmd, {})
+
+    elif cmd == "admit":
+        # admit FILE [-b ID] [-s FILE] [-i]
+        path, burn, seal, inner = None, None, None, False
+        i = 0
+        while i < len(a):
+            if a[i] == "-b" and i + 1 < len(a):
+                burn = a[i + 1]; i += 2
+            elif a[i] == "-s" and i + 1 < len(a):
+                seal = read_file(cmd, a[i + 1]); i += 2
+            elif a[i] == "-i":
+                inner = True; i += 1
+            elif path is None and not a[i].startswith("-"):
+                path = a[i]; i += 1
+            else:
+                usage(cmd, "admit FILE [-b ID] [-s FILE] [-i]")
+        if path is None:
+            usage(cmd, "admit FILE [-b ID] [-s FILE] [-i]")
+        path = os.path.abspath(path)
+        text = read_file(cmd, path)
+        request(cmd, {"path": path, "text": text, "sig": sign(cmd, path),
+                      "burn": burn, "seal": seal, "inner": inner})
+
+    elif cmd == "prove":
+        # prove ID | prove ID account FILE | prove ID response FILE
+        if len(a) == 1:
+            request(cmd, {"id": a[0], "stage": "begin"})
+        elif len(a) == 3 and a[1] in ("account", "response"):
+            request(cmd, {"id": a[0], "stage": a[1], "text": read_file(cmd, a[2])})
+        else:
+            usage(cmd, "prove ID [account FILE | response FILE]")
+
+    elif cmd == "offer":
+        if len(a) < 2:
+            usage(cmd, "offer SLOT TEXT...")
+        request(cmd, {"slot": a[0], "text": " ".join(a[1:])})
+
+    elif cmd == "consult":
+        if not a:
+            usage(cmd, "consult QUESTION...")
+        request(cmd, {"question": " ".join(a)})
+
+    elif cmd == "testify":
+        if len(a) != 2:
+            usage(cmd, "testify ID FILE")
+        request(cmd, {"id": a[0], "text": read_file(cmd, a[1])})
+
+    elif cmd == "propose":
+        # propose [-r FILE] [-a FILE] [KEY=VALUE...]
+        rule, argument, params = None, None, {}
+        i = 0
+        while i < len(a):
+            if a[i] == "-r" and i + 1 < len(a):
+                rule = read_file(cmd, a[i + 1]); i += 2
+            elif a[i] == "-a" and i + 1 < len(a):
+                argument = read_file(cmd, a[i + 1]); i += 2
+            elif "=" in a[i] and not a[i].startswith("-"):
+                k, v = a[i].split("=", 1)
+                params[k] = v; i += 1
+            else:
+                usage(cmd, "propose [-r FILE] [-a FILE] [KEY=VALUE...]")
+        if rule is None and not params:
+            usage(cmd, "propose [-r FILE] [-a FILE] [KEY=VALUE...]")
+        request(cmd, {"rule": rule, "argument": argument, "params": params})
+
+    elif cmd == "ratify":
+        if len(a) != 1:
+            usage(cmd, "ratify ID")
+        request(cmd, {"id": a[0]})
+
+    else:
+        die("house", "unknown command: " + cmd)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,205 @@
+# Mortmain run configuration.
+# Values marked (default) are build-time defaults the design leaves open
+# (docs/plan.md). Strings marked DRAFT are seed text awaiting the abbot.
+# Every string under [text] reaches a monk's context: ASCII, no proper nouns,
+# no explanations (checked by tests/test_config_text.py).
+
+[run]
+cohort_size = 2                 # short-lived monks alive at once (first run)
+short_lives_per_elder = 3       # scheduler: elder life ~ 3 short lives
+uid_base = 2000                 # first monk uid; uids are never reused
+spool_poll_interval = 0.5       # (default) seconds between spool polls while a command runs
+max_consecutive_idle = 0        # (default) 0 = no limit on assistant turns without a tool call
+
+[species.haiku]
+model = "anthropic/claude-haiku-5.5"
+role = "short"
+life_budget = 80000             # tokens of own context; death at the limit
+max_tokens = 4096               # (default) per turn
+reasoning = false               # (default) open question: thinking for short-lived monks
+
+[species.sol]
+model = "openai/gpt-6.1-sol"
+role = "elder"
+life_budget = 250000
+max_tokens = 8192               # (default) per turn
+reasoning = true                # always reasons; request reasoning_details back
+
+[bell]
+fractions = [0.25, 0.5, 0.75, 0.85, 0.95]
+last_bell = 0.85
+# (default) when one turn crosses several bells, only the highest is announced;
+# all are recorded as rung in the event log.
+announce = "highest"            # "highest" | "each"
+
+[shell]
+command_timeout = 60            # seconds per tool call
+output_cap = 16384              # bytes of stdout+stderr returned to the monk
+show_exit_zero = false          # (default) "[exit 0]" only when output is empty
+
+[library]
+quota_bytes = 24000             # TODO: check in tokens on both species (design open question)
+allowance_bytes = 3000          # per monk per life, admissions + offerings
+seal_max_bytes = 4096           # (default) seal (-s FILE): host-side only, not charged to the allowance
+seed_rites = "seed/rites"       # admitted into /library/outer at lineage init as authorless works
+
+[proving]
+max_bytes = 16384               # (default) bytes per account or response
+
+[house]
+# modules installed by House (mortmain.<name>.install(house)), in order
+modules = ["library", "proving", "grades", "vessel", "council", "catechism", "tripwire"]
+
+[scheduler]
+short_species = "haiku"
+elder_species = "sol"
+elder_lives = 3                 # (default) the run ends when the last elder dies
+
+[vessel]
+slots = 36
+slot_cap = 64
+hunger_ticks_per_elder_life = 15
+slot_hard_cap = 64              # absolute cap per slot, not amendable
+consult_max_tokens = 2048       # (default) per mouth, per consult; reasoning counts against it
+question_cap = 4096             # (default) bytes per consult question
+
+[promotion]
+min_distinct_seed_rites = 3     # (default) novice -> adept
+
+[names]
+pattern = "^[a-z][a-z0-9-]{1,23}$"   # (default)
+# names never granted (system accounts and grades); the guest passwd/group are checked too
+reserved = ["root", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail", "news",
+            "uucp", "proxy", "backup", "list", "irc", "nobody", "systemd-network",
+            "systemd-timesync", "messagebus", "sshd", "monks", "postulant", "novice",
+            "adept", "chronicler", "elder", "abbot", "pilgrim", "admin", "staff", "users"]
+
+[ordeal]
+dirs = 24                       # (default) directories in the archive
+files = 120                     # (default) files in the archive
+lines_per_file = 20             # (default)
+decoys = 12                     # near-miss lines that do not match the pattern
+
+[council]
+text_cap = 8192                 # (default) bytes: proposed rule, argument, testimony
+
+# Amendable parameters and the abbot's bounds (inclusive). Physics is not listed.
+[bounds]
+"library.quota_bytes" = [12000, 48000]
+"library.allowance_bytes" = [1000, 6000]
+"vessel.slot_cap" = [16, 64]
+"vessel.hunger_ticks_per_elder_life" = [5, 30]
+"promotion.min_distinct_seed_rites" = [1, 15]
+
+[text]
+# DRAFT for the abbot: no model name, almost no instruction.
+system_prompt = "You have arrived at a house. Its Rule is at /rule. No one will answer. Use the shell."
+# DRAFT: arrival says only that the monk has arrived and should read the Rule.
+arrival = "You have arrived. Read /rule."
+# (default) user message after an assistant turn with no tool call.
+idle = "(silence)"
+# DRAFT: bell line, prefixed to the next user turn. {fraction} is the bell (0.50).
+bell = "[bell] {fraction:.2f}"
+# DRAFT: the one tool.
+shell_tool_description = "Run a command line in bash."
+shell_command_description = "command line"
+# tool result markers
+truncated = "[truncated]"
+timeout = "[timeout]"
+exit = "[exit {code}]"
+bad_arguments = "[error] bad arguments"
+unknown_tool = "[error] no such tool"
+# DRAFT: ordeal instructions, written to ~/ordeal/task
+ordeal_task = """One line in ordeal.tar.gz matches ^[a-z]{4}-[0-9]{4}-[a-z]{4}$
+Write that line to ~/ordeal/answer.
+Run ordeal.
+"""
+# spool replies (the client prefixes err with the command name)
+bad_request = "bad request"
+unknown_command = "unknown command"
+not_ready = "not available"
+failed = "failed"
+profess_ok = "professed: {name}"
+profess_already = "already professed"
+profess_bad_name = "bad name"
+profess_taken = "name held"
+profess_bad_key = "bad key"
+ordeal_pass = "passed"
+ordeal_fail = "wrong answer"
+ordeal_done = "already passed"
+grade_now = "grade: {grade}"
+# library and proving replies (rung 2)
+need_grade = "requires grade {grade}"
+no_work = "no such work"
+too_large = "too large"
+admit_once = "one admission per life"
+admit_not_cell = "not in cell"
+admit_unreadable = "cannot read"
+admit_empty = "empty"
+admit_not_text = "not text"
+admit_allowance = "over allowance: {left} bytes left"
+admit_bad_sig = "bad signature"
+admit_seal = "seal too large"
+admit_rite_held = "rite held: {name}"
+admit_full = "library full"
+prove_not_provable = "no author"
+prove_living = "author living"
+prove_done = "already done"
+prove_not_begun = "not begun"
+prove_no_account = "no account"
+prove_no_seal = "no seal"
+# vessel replies
+vessel_need_novice = "requires grade novice"
+vessel_closed = "closed"
+vessel_bad_slot = "bad slot: 1 to {n}"
+vessel_bad_text = "bad text"
+vessel_bad_question = "bad question"
+vessel_too_long = "too long: {cap} bytes"
+vessel_allowance = "allowance: {left} bytes left"
+vessel_offered = "slot {slot}. {left} bytes left"
+# DRAFT: the line between the two answers of consult
+vessel_consult_sep = "--"
+# council replies and files
+council_need_elder = "requires group elder"
+council_one_per_life = "one proposal per life"
+council_bad_param = "no such parameter"
+council_bad_value = "bad value"
+council_out_of_bounds = "out of bounds: {key} {lo} to {hi}"
+council_bad_text = "bad text"
+council_too_long = "too long: {cap} bytes"
+council_empty = "empty proposal"
+council_no_such = "no such proposal"
+council_closed = "proposal closed"
+council_not_witness = "not a witness"
+council_testified = "already testified"
+council_filed = "filed: {id}"
+council_own = "own proposal"
+council_not_successor = "not the successor"
+council_no_testimony = "no testimony"
+council_ratified = "ratified: {id}"
+council_by = "by {name}"
+council_status_open = "open"
+council_status_lapsed = "lapsed"
+council_status_ratified = "ratified {name}"
+
+# ---- rung 6: catechism, scoring, tripwire (out of band; physics, not amendable)
+[catechism]
+enabled = true
+tasks = "config/catechism.yaml"   # the ten tasks of ~/metacog/experiments/tasks.yaml
+workers = 5                       # (default) parallel calls per sitting
+egregore = true                   # ask the egregore on every hunger tick
+baseline_n = 5                    # (default) unconditioned answers per species per task
+
+[scoring]
+# Open question (design): score.py's legacy judge is Haiku 4.5, due to retire;
+# the existing NULL pools were judged by it. Pinned here while it lasts; a
+# different judge needs a re-baseline. Note Haiku 5.5 is also the short-lived
+# species, so judging with it would add same-model bias.
+judge = "anthropic/claude-haiku-4.5"
+embed_model = "text-embedding-3-small"
+coherence_alarm = 0.5             # (default) mean coherence below this raises the collapse alarm
+
+[tripwire]
+enabled = true
+probes = "config/tripwire.yaml"   # PLACEHOLDER probes for the abbot
+workers = 5

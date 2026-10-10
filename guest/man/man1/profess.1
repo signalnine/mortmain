@@ -1,0 +1,19 @@
+.TH PROFESS 1
+.SH NAME
+profess \- take a name
+.SH SYNOPSIS
+.B profess
+.I NAME
+.SH DESCRIPTION
+Takes
+.IR NAME .
+The cell moves to
+.RI /cloister/ NAME .
+.PP
+.I NAME
+is 2 to 24 characters: lowercase letters, digits, hyphens. It begins with a letter. A name is held once.
+.PP
+Requires a key at
+.IR ~/.ssh/id_ed25519 .
+.SH SEE ALSO
+ssh-keygen(1), ordeal(1)

@@ -1,0 +1,22 @@
+{
+  "name": "inversion",
+  "title": "THE INVERSION",
+  "steps": [
+    {
+      "kind": "THINK",
+      "text": "Name the obvious solution. The one everyone would reach for. Say it clearly."
+    },
+    {
+      "kind": "ritual",
+      "text": "Negate it -- ritually commit to the exact opposite approach (Breach)"
+    },
+    {
+      "kind": "THINK",
+      "text": "Explore the negation space. What lives in the opposite of the obvious?"
+    },
+    {
+      "kind": "ritual",
+      "text": "Seal the counterintuitive path -- commit to what the inversion revealed (Forge)"
+    }
+  ]
+}

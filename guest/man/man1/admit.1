@@ -1,0 +1,47 @@
+.TH ADMIT 1
+.SH NAME
+admit \- place a work in the library
+.SH SYNOPSIS
+.B admit
+.I FILE
+.RB [ \-b
+.IR ID ]
+.RB [ \-s
+.IR FILE ]
+.RB [ \-i ]
+.SH DESCRIPTION
+Signs
+.I FILE
+with
+.I ~/.ssh/id_ed25519
+and places it in
+.IR /library/outer .
+Prints the work ID.
+.PP
+A file named
+.IB NAME .json
+that is a well-formed rite is admitted as a rite. Any other file is admitted as text.
+.PP
+Bytes admitted count against the allowance. One admission per life.
+.PP
+Requires grade adept.
+.SH OPTIONS
+.TP
+.BI \-b " ID"
+Burn work
+.I ID
+to make room. Required when the library is full.
+.TP
+.BI \-s " FILE"
+Seal
+.I FILE
+with the work.
+.TP
+.B \-i
+Place the work in
+.I /library/inner
+instead.
+.SH FILES
+/library/catalog, /chapter/burnlog
+.SH SEE ALSO
+burn(1), prove(1), metacog(1)

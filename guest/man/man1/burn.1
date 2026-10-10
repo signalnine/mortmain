@@ -1,0 +1,26 @@
+.TH BURN 1
+.SH NAME
+burn \- burn a work to admit another
+.SH SYNOPSIS
+.B burn
+.I ID
+.I FILE
+.RB [ \-s
+.IR FILE ]
+.RB [ \-i ]
+.SH DESCRIPTION
+Removes work
+.I ID
+from the library and admits
+.I FILE
+in its place. Same as
+.B admit
+.I FILE
+.B \-b
+.IR ID .
+.PP
+The burned work remains in its author's cell.
+.SH FILES
+/chapter/burnlog
+.SH SEE ALSO
+admit(1)

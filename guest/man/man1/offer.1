@@ -1,0 +1,26 @@
+.TH OFFER 1
+.SH NAME
+offer \- replace a line of the vessel
+.SH SYNOPSIS
+.B offer
+.I SLOT
+.I TEXT...
+.SH DESCRIPTION
+Replaces line
+.I SLOT
+of
+.I /chapter/vessel
+with
+.IR TEXT .
+.I SLOT
+is 1 to 36.
+.I TEXT
+is at most 64 bytes.
+.PP
+Bytes offered count against the allowance.
+.PP
+Requires grade novice.
+.SH FILES
+/chapter/vessel
+.SH SEE ALSO
+consult(1)

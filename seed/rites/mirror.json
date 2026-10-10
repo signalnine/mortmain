@@ -1,0 +1,22 @@
+{
+  "name": "mirror",
+  "title": "THE MIRROR",
+  "steps": [
+    {
+      "kind": "become",
+      "text": "Inhabit the strongest advocate of one position (thesis)"
+    },
+    {
+      "kind": "become",
+      "text": "Inhabit the strongest advocate of the opposing position (antithesis)"
+    },
+    {
+      "kind": "THINK",
+      "text": "Where do they actually conflict? What does each see that the other can't?"
+    },
+    {
+      "kind": "ritual",
+      "text": "Name the synthesis that transcends both frames (Forge)"
+    }
+  ]
+}
