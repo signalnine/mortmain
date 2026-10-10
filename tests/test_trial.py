@@ -104,5 +104,11 @@ def test_dry_trial_end_to_end(tmp_path):
     assert rep["arms"]["control"]["n"] == 2 and rep["arms"]["clock"]["n"] == 2
     assert "p_holm" in rep["arms"]["clock"] and "p_holm" not in rep["arms"]["diag"]
     assert "control" in trial.render(rep, spec)
+    assert not (d / "control-00" / "vm").exists() and (d / "control-00" / "events.jsonl").exists()
+    # a failed life (dir, no summary) is started over
+    (d / "clock-01.json").unlink()
+    (d / "clock-01" / "stale").write_text("x")
+    assert trial.main(["--runs", str(tmp_path), "run", str(spec_path), "--n", "2", "--dry", "--fake-vm"]) == 0
+    assert (d / "clock-01.json").exists() and not (d / "clock-01" / "stale").exists()
     # resume: nothing left to run
     assert trial.main(["--runs", str(tmp_path), "run", str(spec_path), "--n", "2", "--dry", "--fake-vm"]) == 0

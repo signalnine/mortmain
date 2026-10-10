@@ -6,7 +6,8 @@
 
 SPEC is a TOML file (experiments/*.toml):
 
-    [trial]   name, species, n, max_turns, max_cost_per_life, parallel, control, seed
+    [trial]   name, species, n, max_turns, max_cost_per_life, parallel, control, seed,
+              keep_vm (default false: a life's vm/ is removed once its summary is saved)
     [base]    overrides applied to config/run.toml for every arm
     [[arm]]   id, note, n (default [trial] n), test (default true: in the Holm
               family against control), and [arm.over] overrides on top of [base]
@@ -28,6 +29,7 @@ import json
 import math
 import random
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -118,6 +120,8 @@ def run(spec: dict, image: str | None, cap: int | None, parallel: int, arms: lis
         with lock:
             if spent[0] >= max_cost:
                 return
+        if (d / lineage).exists():  # a failed earlier attempt: start the life over
+            shutil.rmtree(d / lineage)
         cmd = [sys.executable, "-m", "mortmain", "--runs", str(d), "run", "--lineage", lineage, "--rung", "1",
                "--species", tr["species"], "--max-turns", str(tr.get("max_turns", 40)),
                "--max-cost", str(tr.get("max_cost_per_life", 0.25)), "--config", str(d / "config" / f"{a}.toml")]
@@ -130,6 +134,8 @@ def run(spec: dict, image: str | None, cap: int | None, parallel: int, arms: lis
             return
         summary = json.loads(p.stdout)
         (d / f"{lineage}.json").write_text(json.dumps(summary, indent=1) + "\n")
+        if not tr.get("keep_vm", False):  # ~340 MB a life; the measures need only events and conversation
+            shutil.rmtree(d / lineage / "vm", ignore_errors=True)
         with lock:
             spent[0] += summary["billed"]["cost"]
             print(f"{lineage}: grade {summary['grade']} turns {summary['turns']} "
