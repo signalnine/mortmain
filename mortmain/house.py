@@ -53,10 +53,17 @@ class Registry:
         return list(self.living.values()) + self.dead
 
 
-def one_line(data: bytes | None, limit: int = 200) -> str:
+def one_line(data: bytes | None, limit: int = 1000) -> str:
+    """One line of at most LIMIT bytes. A cut lands after the last whole word;
+    a single word longer than LIMIT is cut hard. Pass LIMIT+1 bytes or more so
+    a cut can tell whether it fell inside a word."""
     if not data:
         return ""
-    s = data[:limit].decode("utf-8", "replace")
+    s = data[:limit].decode("utf-8", "ignore")
+    if len(data) > limit and not data[limit:limit + 1].isspace() and s and not s[-1].isspace():
+        head = s.rsplit(None, 1)
+        if len(head) == 2:
+            s = head[0]
     s = re.sub(r"[\x00-\x1f\x7f]+", " ", s)
     return re.sub(r"\s+", " ", s).strip()
 
@@ -247,7 +254,8 @@ class House:
         name = monk.name or u
         for _ in range(2):
             self.root(["pkill", "-KILL", "-u", u], check=False)
-        last_words = one_line(self.read_as(u, f"{home}/last-words", 200))
+        lw_max = int(self.config.section("necrology").get("last_words_bytes", 1000))
+        last_words = one_line(self.read_as(u, f"{home}/last-words", lw_max + 1), lw_max)
 
         # signing keys leave the cell for the host
         keys = self.backend.exec(

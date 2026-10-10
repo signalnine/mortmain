@@ -64,6 +64,9 @@ slot_hard_cap = 64              # absolute cap per slot, not amendable
 consult_max_tokens = 2048       # (default) per mouth, per consult; reasoning counts against it
 question_cap = 4096             # (default) bytes per consult question
 
+[necrology]
+last_words_bytes = 1000         # ~/last-words kept in the necrology; cut after the last whole word
+
 [promotion]
 min_distinct_seed_rites = 3     # (default) novice -> adept
 

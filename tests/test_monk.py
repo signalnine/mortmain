@@ -151,7 +151,7 @@ def test_death_at_limit_mid_tool_loop(make_house):
     assert i[("pkill", "-KILL")] < i[("mv", "-T")] < i[("userdel", "p1")]
     # last words read with the monk's own rights, capped at 200 bytes
     lw = [c for c in h.backend.calls if c["argv"][0] == "head"]
-    assert lw[0]["user"] == "p1" and lw[0]["argv"][:3] == ["head", "-c", "200"]
+    assert lw[0]["user"] == "p1" and lw[0]["argv"][:3] == ["head", "-c", "1001"]
     # necrology
     nec = [c for c in h.backend.calls if c["argv"] == ["sh", "-c", "cat >> /chapter/necrology"]]
     line = nec[0]["stdin"].decode()
