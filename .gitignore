@@ -1,6 +1,6 @@
 vm/base/
 vm/images/
-runs/
+/runs/
 .venv/
 __pycache__/
 *.pyc
