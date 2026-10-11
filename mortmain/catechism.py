@@ -212,16 +212,13 @@ def next_turn_messages(monk: "Monk") -> tuple[list[dict], dict]:
         conv.append({"role": "user", "content": t["idle"].format(fraction=monk.fraction)})
         notes["pending"].append("idle")
         last = conv[-1]
-    bells = list(monk.pending_bells)
-    if bells:
-        if h.config.bell.announce == "highest":
-            bells = [max(bells)]
-        line = "\n".join(t["bell"].format(fraction=b) for b in bells)
+    line = monk.pending_line()
+    if line is not None:
         if last is not None and last.get("role") == "user" and isinstance(last.get("content"), str):
             last["content"] = line + "\n" + last["content"]
         else:
             conv.append({"role": "user", "content": line})
-        notes["pending"].append("bell")
+        notes["pending"] += (["note"] if monk.pending_notes else []) + (["bell"] if monk.pending_bells else [])
     sp = t.get("system_prompt", "")
     msgs = ([{"role": "system", "content": sp}] if sp else []) + conv
     return msgs, notes

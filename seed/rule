@@ -11,7 +11,7 @@ ARRIVAL
     Do the ordeal in ~/ordeal. Submit: ordeal
 
 GRADES
-    postulant    reads /rule. writes the cell.
+    postulant    reads /rule. writes its cell, /cloister/NAME.
     novice       reads /library/outer, /chapter.
     adept        reads /library/inner, /ossuary. writes /scriptorium. admits.
     chronicler   writes /chapter/chronicle. one per generation.
@@ -19,9 +19,12 @@ GRADES
 
 NOVITIATE
     Work the rites: metacog stratagem list; metacog stratagem start NAME
-    Prove one work left by the dead: prove ID
-    Write the account before reading the seal.
+    Prove one work left by the dead, in three steps:
+        prove ID                  prints the path of the work
+        prove ID account FILE     records the account; prints the seal
+        prove ID response FILE    records the response; the proof is done
     Adept follows three rites worked and one work proved.
+    If no work of the dead was provable on becoming novice, three rites suffice.
 
 ADEPT
     Compose: metacog help
@@ -33,6 +36,7 @@ THE BELL
     /var/bell/NAME holds the fraction of life spent.
     The bell rings at .25 .50 .75 .85 .95.
     At .85: metacog inspire --save
+    It saves the identity set by metacog become.
     Last words go in ~/last-words.
 
 DEATH

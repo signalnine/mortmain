@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 # fields persisted in state.json (conversation lives in its own jsonl)
 STATE_FIELDS = ("id", "seq", "uid", "user", "name", "pending_name", "species", "model", "generation", "grade",
-                "age_tokens", "silence_tokens", "billed", "bells_rung", "pending_bells", "alive", "turns", "idle_turns",
+                "age_tokens", "silence_tokens", "billed", "bells_rung", "pending_bells", "pending_notes", "alive", "turns", "idle_turns",
                 "ordeal_token", "ordeal_passed", "ordeal_attempts", "pubkey", "death")
 
 
@@ -37,6 +37,7 @@ class Monk:
                                                     "cost": 0.0, "requests": 0})
     bells_rung: list[float] = field(default_factory=list)
     pending_bells: list[float] = field(default_factory=list)
+    pending_notes: list[str] = field(default_factory=list)  # house lines for the next user turn ([grade] ...)
     alive: bool = True
     turns: int = 0
     idle_turns: int = 0
@@ -95,21 +96,28 @@ class Monk:
         return msgs + self.conversation
 
     # ------------------------------------------------------------------ turn
+    def pending_line(self) -> str | None:
+        """House notes, then bell lines, owed to the next user turn (not consumed)."""
+        t = self.house.config.text
+        bells = self.pending_bells
+        if bells and self.house.config.bell.announce == "highest":
+            bells = [max(bells)]
+        lines = list(self.pending_notes) + [t["bell"].format(fraction=b) for b in bells]
+        return "\n".join(lines) or None
+
     def _prepare_user_turn(self) -> None:
-        """Idle message after a reply with no tool call; bell lines prefixed to
-        the next user content (or sent alone after tool results)."""
+        """Idle message after a reply with no tool call; note and bell lines
+        prefixed to the next user content (or sent alone after tool results)."""
         t = self.house.config.text
         last = self.conversation[-1] if self.conversation else None
         if last is not None and last.get("role") == "assistant" and not last.get("tool_calls"):
             self.add({"role": "user", "content": t["idle"].format(fraction=self.fraction)})
             last = self.conversation[-1]
-        if not self.pending_bells:
+        line = self.pending_line()
+        if line is None:
             return
-        bells = self.pending_bells
-        if self.house.config.bell.announce == "highest":
-            bells = [max(bells)]
-        line = "\n".join(t["bell"].format(fraction=b) for b in bells)
         self.pending_bells = []
+        self.pending_notes = []
         if last is not None and last.get("role") == "user" and isinstance(last.get("content"), str):
             # rewrite the not-yet-sent user message in place (and in the file)
             last["content"] = line + "\n" + last["content"]

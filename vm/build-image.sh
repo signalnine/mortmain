@@ -79,6 +79,7 @@ P="$WORK/payload"
 mkdir -p "$P/bin" "$P/man1"
 cp "$METACOG_BIN" "$P/metacog"
 cp "$ROOT/guest/setup/provision.sh" "$P/provision.sh"
+cp "$ROOT/guest/setup/inbox-mask" "$P/inbox-mask"
 find "$ROOT/guest/bin" -maxdepth 1 -type f -exec cp {} "$P/bin/" \; 2>/dev/null || true
 find "$ROOT/guest/man/man1" -maxdepth 1 -type f -exec cp {} "$P/man1/" \; 2>/dev/null || true
 [ -f "$ROOT/seed/rule" ] && cp "$ROOT/seed/rule" "$P/rule"

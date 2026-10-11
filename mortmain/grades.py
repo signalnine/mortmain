@@ -83,8 +83,11 @@ class Grades:
             self._maybe_chronicler(monk)
 
     def on_turn(self, monk: "Monk") -> None:
+        # promotion here answers no request, so the monk is told on its next turn
         if monk.alive and monk.grade == "novice":
-            self.check(monk)
+            at = len(monk.pending_notes)  # before any office granted by the promotion
+            if self.check(monk):
+                monk.pending_notes.insert(at, self.house.config.text["grade_note"].format(grade="adept"))
 
     def on_death(self, monk: "Monk") -> None:
         ch = self.st["chronicler"]
@@ -140,6 +143,7 @@ class Grades:
             return
         h.root(["usermod", "-aG", "chronicler", monk.user])
         ch.update(holder=monk.id, filled=True)
+        monk.pending_notes.append(h.config.text["grade_note"].format(grade="chronicler"))
         h.log.append("chronicler", action="begin", monk=monk.id, name=monk.name, generation=ch["generation"])
 
 

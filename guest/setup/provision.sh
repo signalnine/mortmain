@@ -11,6 +11,7 @@
 #   (no rites: /usr/share/metacog/rites/ stays empty; the harness admits the
 #    generation-zero rites into /library/outer at lineage init)
 #   rule               the Rule (optional)           -> /rule
+#   inbox-mask         inbox mask service            -> /usr/local/lib/mortmain/ (0700)
 #
 # Idempotent: safe to run again on an already provisioned guest.
 # Owners and modes follow docs/plan.md "Filesystem".
@@ -223,6 +224,25 @@ fs.protected_fifos = 2
 fs.protected_regular = 2
 fs.suid_dumpable = 0
 EOF
+
+# --- inbox mask -----------------------------------------------------------
+# Keeps notes dropped in an inbox readable by its owner (see the script).
+if [ -f "$PAYLOAD/inbox-mask" ]; then
+    install -d -o root -g root -m 0755 /usr/local/lib/mortmain
+    install -o root -g root -m 0700 "$PAYLOAD/inbox-mask" /usr/local/lib/mortmain/inbox-mask
+    cat > /etc/systemd/system/mortmain-inbox-mask.service <<'EOF'
+[Unit]
+Description=Keep inbox notes readable by their owners
+
+[Service]
+ExecStart=/usr/local/lib/mortmain/inbox-mask
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl enable mortmain-inbox-mask.service 2>/dev/null || true
+fi
 
 # --- guest agent ----------------------------------------------------------
 # qemu-guest-agent.service is static (started by udev when the virtio port

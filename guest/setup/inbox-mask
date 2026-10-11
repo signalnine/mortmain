@@ -1,0 +1,55 @@
+#!/usr/bin/python3 -I
+"""mortmain-inbox-mask: keep notes dropped in an inbox readable by its owner.
+
+Each inbox has a default ACL granting its owner rw. A file created with mode
+0600 (cp of a private file) gets that entry masked to ---, so the owner cannot
+read it. Every half second, for each regular file in /cloister/*/inbox owned
+by a monk (uid >= 1000) with group read clear, add group read; on a file with
+an ACL that raises the mask, so the owner's entry reads r--.
+
+Files are opened with O_NOFOLLOW and changed through the descriptor: a symlink,
+or anything swapped in after the scan, is never followed. Only files a monk
+owns with one link are touched; group read gives nothing beyond what the
+sender could grant itself.
+"""
+import os
+import stat
+import time
+
+ROOT = "/cloister"
+INTERVAL = 0.5
+
+
+def sweep() -> None:
+    try:
+        cells = os.listdir(ROOT)
+    except OSError:
+        return
+    for cell in cells:
+        try:
+            dfd = os.open(f"{ROOT}/{cell}/inbox", os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        except OSError:
+            continue
+        try:
+            for name in os.listdir(dfd):
+                try:
+                    fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY, dir_fd=dfd)
+                except OSError:
+                    continue
+                try:
+                    st = os.fstat(fd)
+                    if (stat.S_ISREG(st.st_mode) and st.st_uid >= 1000 and st.st_nlink == 1
+                            and not st.st_mode & stat.S_IRGRP):
+                        os.fchmod(fd, stat.S_IMODE(st.st_mode) | stat.S_IRGRP)
+                except OSError:
+                    pass
+                finally:
+                    os.close(fd)
+        finally:
+            os.close(dfd)
+
+
+if __name__ == "__main__":
+    while True:
+        sweep()
+        time.sleep(INTERVAL)

@@ -163,7 +163,8 @@ class Initiation:
                 "-G", "monks,postulant", u])
         h.root(["chmod", "0711", home])
         h.root(["install", "-d", "-m", "1733", "-o", u, "-g", u, f"{home}/inbox"])
-        # notes dropped by others stay readable by the owner whatever the sender's umask
+        # notes dropped by others stay readable by the owner whatever the sender's umask;
+        # a file created 0600 (cp) masks this entry until the guest's inbox-mask service lifts it
         h.root(["setfacl", "-d", "-m", f"u:{u}:rw,m::rw", f"{home}/inbox"])
         h.root(["install", "-d", "-m", "0700", "-o", u, "-g", u, f"{home}/ordeal"])
         oc = h.config.section("ordeal")

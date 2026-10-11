@@ -47,3 +47,19 @@ def test_inbox_drop_between_monks(h):
     assert sh(h, a, f"ls /cloister/{b.user}").exit_code != 0
     assert sh(h, a, f"ls /cloister/{b.user}/inbox").exit_code != 0
     assert sh(h, a, f"cat /cloister/{b.user}/secret").exit_code != 0
+
+
+def test_inbox_copy_of_private_file_becomes_readable(h):
+    import time
+    a, b = h.arrive("haiku"), h.arrive("haiku")
+    r = sh(h, a, f"umask 077; echo gift > ~/gift; cp ~/gift /cloister/{b.user}/inbox/gift && ln -s /etc/shadow "
+                 f"/cloister/{b.user}/inbox/link; stat -c %a ~/gift")
+    assert r.exit_code == 0 and out(r).strip() == "600", out(r)
+    for _ in range(20):
+        r = sh(h, b, "cat ~/inbox/gift")
+        if r.exit_code == 0:
+            break
+        time.sleep(0.25)
+    assert out(r).strip() == "gift", out(r)
+    # the service never follows a link out of the inbox
+    assert h.root(["stat", "-c", "%a", "/etc/shadow"]).stdout.decode().strip() in ("640", "600")

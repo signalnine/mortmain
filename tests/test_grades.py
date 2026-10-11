@@ -82,6 +82,11 @@ def test_promotion_on_turn_hook(make_house, tmp_path):
         if n.grade == "adept":
             break
     assert n.grade == "adept"
+    # promoted outside a request reply: told on the next user turn (first adept also holds the office)
+    assert n.pending_notes == ["grade: adept", "grade: chronicler"]
+    n._prepare_user_turn()
+    assert n.conversation[-1] == {"role": "user", "content": "grade: adept\ngrade: chronicler"}
+    assert n.pending_notes == []
 
 
 def test_chronicler_office(make_house, tmp_path):
