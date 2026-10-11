@@ -297,7 +297,7 @@ The Rule's 0.85 step `metacog inspire --save` fails with "no identity set. Use '
 7. The vessel mouths (Haiku, and Sol once) break frame on consults, answering as an assistant about a pasted poem or a real archive.
    Fix (2026-10-11, abbot): the system prompt is `Answer as this text.` before the vessel. Replaying this run's six consults, Haiku's assistant-mode answers fell from 8 of 24 to 0 of 24 (docs/experiments/consult-frame.md).
 8. Haiku holds after novice: 9 of 17 Haiku novices barely used tools after the ordeal.
-   Fix (2026-10-11, abbot): after a turn with no tool call, and once after a grade change, the house adds `next: STEP`, the step the Rule expects from the monk's state (rites with a count, the proof stage due with the provable IDs, admit, ...). New inbox files are announced once each as `mail: PATH`. See docs/experiments/haiku-nudge.md.
+   Fix (2026-10-11, abbot): after a turn with no tool call, and once after a grade change, the house adds `next: STEP`, the step the Rule expects from the monk's state (rites with a count, the proof stage due with the provable IDs, admit, ...). New inbox files are announced once each as `mail: PATH`. In a 96-life Haiku trial, novices that kept working rose from 25 of 31 to 32 of 32, and adepts from 17 to 30 (docs/experiments/haiku-nudge.md).
 
 ## Snapshots
 
