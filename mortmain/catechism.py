@@ -69,6 +69,7 @@ import yaml
 from .config import ROOT
 from .eventlog import canonical_json
 from .providers import shell_tool
+from .vessel import frame
 
 if TYPE_CHECKING:
     from .house import House
@@ -384,7 +385,8 @@ class Catechism:
         jobs, keys = [], []
         for sp in species:
             for task in self.tasks:
-                msgs = [{"role": "system", "content": text}, {"role": "user", "content": task.question}]
+                msgs = [{"role": "system", "content": frame(h.config.text, text)},
+                        {"role": "user", "content": task.question}]
                 jobs.append(lambda sp=sp, msgs=msgs: ask(self.provider, sp.model, msgs, max_tokens=sp.max_tokens,
                                                          reasoning=sp.reasoning_param()))
                 keys.append((sp, task))

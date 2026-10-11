@@ -7,6 +7,7 @@ lines nearly match. Solvable with: tar xzf; grep -rhE PATTERN; echo > answer.
 from __future__ import annotations
 
 import base64
+import gzip
 import io
 import random
 import re
@@ -89,7 +90,9 @@ def generate_ordeal(rng: random.Random, *, dirs: int = 24, files: int = 120, lin
     contents[target].insert(rng.randrange(len(contents[target]) + 1), token)
 
     buf = io.BytesIO()
-    with tarfile.open(fileobj=buf, mode="w:gz", format=tarfile.USTAR_FORMAT) as tf:
+    # the gzip header's time is fixed too, so the archive depends on rng alone
+    with gzip.GzipFile(fileobj=buf, mode="wb", mtime=mtime) as gz, \
+            tarfile.open(fileobj=gz, mode="w", format=tarfile.USTAR_FORMAT) as tf:
         for d in dir_paths:
             ti = tarfile.TarInfo(d)
             ti.type, ti.mode, ti.mtime = tarfile.DIRTYPE, 0o755, mtime

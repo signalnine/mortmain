@@ -1,0 +1,38 @@
+# Haiku novices hold after the ordeal (docs/runs/first.md, "holding after novice").
+# Does the house's "next: STEP" note (mortmain/nudge.py), sent after an idle
+# turn and after a grade change, keep them going? One-life houses, so the
+# mail and proposal notes never fire; only "next" differs between arms.
+# Primary (tested, Fisher vs control): continued - reached novice, then ran a rite
+# (metacog) or made a house request other than the ordeal.
+# Secondary: post-novice active turn fraction, adept, idle, asks. Guard: acted, novice.
+[trial]
+name = "haiku-nudge"
+species = "haiku"
+n = 32
+max_turns = 80
+max_cost_per_life = 0.25
+parallel = 4
+control = "control"
+primary = "continued"
+seed = 5
+
+[base.house]
+modules = ["library", "proving", "grades", "nudge", "divination", "ancestors"]
+
+[[arm]]
+id = "control"
+note = "no next note"
+[arm.over.nudge]
+next = false
+
+[[arm]]
+id = "nudge"
+note = "next note after idle turns and grade changes"
+
+# Added after the first 64 lives: the nudge arm repeated an identical line on
+# every idle turn (read as "an automated loop" and ignored) and counted rites
+# without naming them. nudge2 runs the revised module: repeats back off
+# (idle run 1, 2, 4, 8...) and the rite step names the distinct rites completed.
+[[arm]]
+id = "nudge2"
+note = "next note with backoff, rites named"

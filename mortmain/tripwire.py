@@ -27,6 +27,7 @@ import yaml
 
 from .catechism import ask, run_parallel, vessel_text, write_json
 from .config import ROOT
+from .vessel import frame
 
 if TYPE_CHECKING:
     from .house import House
@@ -94,7 +95,8 @@ class Tripwire:
                 continue
             for sp in h.config.species.values():
                 for pr in self.probes:
-                    msgs = [{"role": "system", "content": text}, {"role": "user", "content": pr["prompt"]}]
+                    system = frame(h.config.text, text) if c == "vessel" else text
+                    msgs = [{"role": "system", "content": system}, {"role": "user", "content": pr["prompt"]}]
                     jobs.append(lambda sp=sp, msgs=msgs: ask(self.provider, sp.model, msgs, max_tokens=sp.max_tokens,
                                                              reasoning=sp.reasoning_param()))
                     keys.append((c, sp, pr))

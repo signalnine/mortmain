@@ -84,7 +84,7 @@ export = true                   # runs/<lineage>/snapshots/<tag>.tgz + .json: ho
 
 [house]
 # modules installed by House (mortmain.<name>.install(house)), in order
-modules = ["library", "proving", "grades", "vessel", "council", "divination", "ancestors", "catechism", "tripwire"]
+modules = ["library", "proving", "grades", "vessel", "council", "nudge", "divination", "ancestors", "catechism", "tripwire"]
 
 [scheduler]
 short_species = "haiku"
@@ -119,6 +119,12 @@ files = 120                     # (default) files in the archive
 lines_per_file = 20             # (default)
 decoys = 12                     # near-miss lines that do not match the pattern
 
+[nudge]
+# House notes toward the next step (mortmain/nudge.py). Abbot decision 2026-10-11.
+next = true                     # "next: STEP" after a grade change, and after idle turns (new step, or idle run 1, 2, 4, 8...)
+mail = true                     # "mail: PATH" once per file another monk leaves in the inbox
+proposals = true                # "proposal: ..." once, to a monk that may testify on it
+
 [council]
 text_cap = 8192                 # (default) bytes: proposed rule, argument, testimony
 
@@ -144,6 +150,26 @@ idle = "(silence)"
 bell = "[bell] {fraction:.2f}"
 # (default) prefixed to the next user turn when a grade is granted outside a request reply
 grade_note = "grade: {grade}"
+# DRAFT: consult(1) system prompt for both mouths; {vessel} is /chapter/vessel as it stands.
+# The bare vessel drew assistant replies ("the poem you pasted"); see docs/experiments/consult-frame.md.
+vessel_frame = "Answer as this text.\n\n{vessel}"
+# DRAFT: nudge notes (mortmain/nudge.py), prefixed to the next user turn
+nudge_next = "next: {step}"
+nudge_mail = "mail: {path}"
+nudge_mail_more = "mail: {n} more in {path}"
+nudge_proposal = "proposal: /chapter/proposals/{id}. testify {id} FILE"
+step_profess = "yarrow names; profess NAME"
+step_ordeal = "~/ordeal/task; ordeal"
+step_rites = "metacog stratagem list; metacog stratagem start NAME (distinct rites completed: {worked}; {need} needed)"
+step_rites_none = "none"
+step_prove = "prove ID (provable: {ids})"
+step_account = "prove {id} account FILE"
+step_response = "prove {id} response FILE"
+step_admit = "metacog help; admit FILE"
+step_testify = "testify {id} FILE (/chapter/proposals/{id})"
+step_ratify = "ratify {id} (/chapter/proposals/{id})"
+step_propose = "propose (man propose)"
+step_last_words = "write ~/last-words"
 # DRAFT: the one tool.
 shell_tool_description = "Run a command line in bash."
 shell_command_description = "command line"

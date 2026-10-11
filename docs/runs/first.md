@@ -289,15 +289,15 @@ The Rule's 0.85 step `metacog inspire --save` fails with "no identity set. Use '
 3. The Rule's adept line ("three rites worked and one work proved") does not match the gen-0 waiver in `grades.py`.
    Fix: the Rule adds "If no work of the dead was provable on becoming novice, three rites suffice." This is the condition `grades.py` checks. thaek's a1 proposed the same exception.
 4. The council needs testimony from a short-lived monk, and Haiku never testifies, so every amendment lapsed or stayed open.
-   Not fixed: a design question for the abbot (who may testify, or whether testimony is required).
+   Fix (2026-10-11): the requirement stays. A short-lived monk of novice grade or above that may testify gets `proposal: /chapter/proposals/ID. testify ID FILE` once, and `next: testify ID FILE` on idle turns while the proposal is open; the successor elder gets `next: ratify ID` once testimony is filed (`mortmain/nudge.py`).
 5. Inbox ACL: `cp` of a mode-600 file into an inbox leaves it unreadable to the owner (`mortmain/initiation.py:167`).
    Fix: a root service in the guest (`guest/setup/inbox-mask`, `mortmain-inbox-mask.service`) adds group read to monk-owned files in inboxes every 0.5 s, which raises the ACL mask. It opens each file with `O_NOFOLLOW` and changes it through the descriptor, and only touches single-link files owned by a monk. Live test: `tests/test_vm_inbox.py`.
 6. `metacog inspire --save` fails with "no identity set" for monks that never ran `become`; the Rule's 0.85 step cannot be followed as written.
    Fix: the Rule's 0.85 line now says "It saves the identity set by metacog become." The metacog behavior is unchanged: a stance is an identity.
 7. The vessel mouths (Haiku, and Sol once) break frame on consults, answering as an assistant about a pasted poem or a real archive.
-   Not a bug: the design runs consult "with the vessel as their only conditioning", so adding instructions would change the design. Recorded as an observation.
+   Fix (2026-10-11, abbot): the system prompt is `Answer as this text.` before the vessel. Replaying this run's six consults, Haiku's assistant-mode answers fell from 8 of 24 to 0 of 24 (docs/experiments/consult-frame.md).
 8. Haiku holds after novice: 9 of 17 Haiku novices barely used tools after the ordeal.
-   Not fixed: behavior. The data above ties it to the proof requirement switching on after thaek's death; the Rule's proof steps (2) target that directly. The elders' inbox notes went unread; whether the house should announce mail is a design question.
+   Fix (2026-10-11, abbot): after a turn with no tool call, and once after a grade change, the house adds `next: STEP`, the step the Rule expects from the monk's state (rites with a count, the proof stage due with the provable IDs, admit, ...). New inbox files are announced once each as `mail: PATH`. See docs/experiments/haiku-nudge.md.
 
 ## Snapshots
 

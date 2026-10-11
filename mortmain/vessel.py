@@ -10,7 +10,8 @@ that state.
 - offer SLOT TEXT: grade novice or above; charged against the monk's per-life
   allowance shared with library admissions; replaces the slot.
 - consult QUESTION: both species answer with the vessel as their only
-  conditioning (system prompt = the file, user = the question, no tools);
+  conditioning (system prompt = [text] vessel_frame with {vessel} replaced by
+  the file, user = the question, no tools);
   answers returned unlabeled in random order. Free; does not feed it.
 - hunger: ticks on the elder's age, `hunger_ticks_per_elder_life` per elder
   life (tick k at fraction k/ticks). A tick with no offering since the previous
@@ -37,6 +38,12 @@ VESSEL_PATH = "/chapter/vessel"
 POEM_PATH = ROOT / "poem.md"
 PRINTABLE = re.compile(r"^[\x20-\x7e]*$")
 SLOT_RE = re.compile(r"^[0-9]{1,3}$")
+
+
+def frame(text_cfg: dict, vessel: str) -> str:
+    """The system prompt the vessel speaks under ([text] vessel_frame): consult,
+    the egregore catechism and the tripwire's vessel condition all use it."""
+    return text_cfg.get("vessel_frame", "{vessel}").replace("{vessel}", vessel)
 
 
 # --------------------------------------------------------------- the poem
@@ -280,11 +287,12 @@ class Vessel:
         if len(q.encode("utf-8")) > int(self.cfg.get("question_cap", 4096)):
             return Reply(False, err=t["vessel_too_long"].format(cap=int(self.cfg.get("question_cap", 4096))))
         vessel = self.content()
+        system = frame(t, vessel)
         max_tokens = int(self.cfg.get("consult_max_tokens", 2048))
         answers = []
         for name, sp in h.config.species.items():
             comp = h.provider.complete(
-                sp.model, [{"role": "system", "content": vessel}, {"role": "user", "content": q}],
+                sp.model, [{"role": "system", "content": system}, {"role": "user", "content": q}],
                 tools=None, max_tokens=max_tokens, reasoning=sp.reasoning_param())
             content = comp.message.get("content")
             answers.append({"species": name, "model": comp.model, "text": (content or "").strip()

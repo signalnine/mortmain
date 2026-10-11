@@ -22,7 +22,7 @@ Rebuild the static metacog binary, then the image, after changing `metacog/`, `g
 
 ## Layout
 
-- `mortmain/house.py` holds the House; rung modules (`library`, `proving`, `grades`, `vessel`, `council`, `catechism`, `tripwire`) plug in via `install(house)` and the hook lists (`handlers`, `arrival_hooks`, `turn_hooks`, `bell_hooks`, `death_hooks`, `generation_hooks`, `start_hooks`), enabled by `[house] modules` in `config/run.toml`. Tests build a house with only `library`, `proving`, `grades` (`tests/conftest.py`), and modules under test install themselves.
+- `mortmain/house.py` holds the House; rung modules (`library`, `proving`, `grades`, `vessel`, `council`, `nudge`, `catechism`, `tripwire`) plug in via `install(house)` and the hook lists (`handlers`, `arrival_hooks`, `turn_hooks`, `bell_hooks`, `death_hooks`, `generation_hooks`, `start_hooks`), enabled by `[house] modules` in `config/run.toml`. Tests build a house with only `library`, `proving`, `grades` (`tests/conftest.py`), and modules under test install themselves.
 - `config/run.toml [text]` is every harness string a monk sees; `tests/test_config_text.py` and `tests/test_seed_text.py` enforce the seed-text rules below.
 - Monk to host traffic goes only through the spool (`guest/bin/house` client, `mortmain/spool.py`); identity is the request file's uid.
 - Host-side root reads and writes in the guest follow symlinks: read monk-owned paths as the monk, never root-write into a cell.
