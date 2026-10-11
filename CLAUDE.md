@@ -13,6 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 bash vm/build-image.sh [--force]                      # gen0 image; skips if inputs unchanged
 .venv/bin/python -m mortmain run --lineage L --rung 1|2|3|full --image vm/images/gen0.qcow2 [--dry] [--fake-vm] [--budget N] [--max-cost USD]
 .venv/bin/python -m mortmain log verify --lineage L   # check the event log hash chain
+.venv/bin/python -m mortmain fork --from L --tag gen-3 --lineage L2   # new lineage from a snapshot export (no VM image needed)
 .venv/bin/python -m mortmain.report surfaces|lexicon|score|baseline|coined ...
 .venv/bin/python -m mortmain.trial run|report experiments/X.toml [--image ...] [--n 4]  # prompt trials: many rung-1 lives per config arm
 ```

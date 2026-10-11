@@ -43,7 +43,7 @@ runs/<lineage>/     per-run host state: events.jsonl, conversations/, catechism/
 - Runtime boot: `qemu-system-x86_64 -enable-kvm -nic none`, virtio-serial channel `org.qemu.guest_agent.0`, QMP socket on the host. No network device at all.
 - Build boot (once, `vm/build-image.sh`): user-mode net + cloud-init seed ISO installs `qemu-guest-agent man-db python3 openssh-client` (for `ssh-keygen -Y sign`), runs `guest/setup/provision.sh`, installs `metacog` binary, guest/bin, man pages, seed, then powers off. Output `vm/images/gen0.qcow2`. After build, cloud-init is disabled.
 - Harness executes everything via guest agent `guest-exec` as root, wrapping monk commands as `runuser -u <user> -- bash -lc <cmd>` with a timeout (default 60s) and an output cap (default 16KB, truncated with a marker).
-- Snapshots: internal qcow2 snapshots via QMP `human-monitor-command savevm <tag>`. Tags: `gen-<n>`, `prove-<work_id>`.
+- Snapshots: disk-only internal qcow2 snapshots via QMP `blockdev-snapshot-internal-sync` (no RAM state; restore reverts offline and boots), plus an export per tag: `runs/<lineage>/snapshots/<tag>.tgz` (house trees) and `<tag>.json` (host state). `mortmain fork` rebuilds a lineage from an export on a fresh gen0 VM. Tags: `gen-<n>`, `prove-<work_id>-<monk>`. `[snapshots]` in config selects either.
 - cgroups: each monk runs inside a systemd slice `monk-<user>.slice` with CPUQuota, MemoryMax, TasksMax; disk via ext4 project quota or per-user quota on /cloister (default: `quota` package, per-user block limit).
 
 ### Filesystem (as design doc), owners and modes
