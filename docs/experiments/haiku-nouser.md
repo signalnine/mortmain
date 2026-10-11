@@ -33,3 +33,14 @@ $1.65 in all.
 - Not fixed: 6 nouser monks still stop at novice. One stopped at the 0.25 bell: "Nothing in the Rule asks for action at that mark, so I'll pause here." About 5 lives per arm end up echoing `(silence)` back as their own reply.
 - Because the arm changed two sentences, the result does not say which one did the work.
 - **Adopted** (2026-10-10): the nouser text, including "until you die", is now `[text] system_prompt`.
+
+## Sol check (2026-10-10)
+
+Spec: `experiments/sol-nouser.toml`. 4 Sol lives per prompt, 40 turns, $2.41.
+
+| arm | acted | adept | continued | post-novice active | idle | cmds | USD |
+|---|---|---|---|---|---|---|---|
+| old | 4/4 | 4 | 4 | 0.76 | 0.21 | 11.2 | 0.83 |
+| nouser | 4/4 | 4 | 4 | 0.99 | 0.01 | 12.2 | 1.57 |
+
+Every Sol life reached adept under both prompts. With the new prompt Sol is almost never idle, so it spends about twice as much per 40 turns. The life budget still caps the total, so this only means Sol uses up its life sooner.
