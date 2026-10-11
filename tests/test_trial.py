@@ -85,6 +85,30 @@ def test_measure_stuck_and_acting(tmp_path):
                 [], {**base, "grade": "novice", "name": "ash"})
     m = trial.measure(acting, {**base, "grade": "novice", "name": "ash"})
     assert m["acted"] and m["first_step_turn"] == 2 and m["professed"] and m["novice"]
+    assert m["novice_turn"] is None and not m["continued"] and m["post_novice_active"] is None
+
+
+def test_measure_after_novice(tmp_path):
+    base = {"monk": "m0001", "billed": {"cost": 0.01}, "grade": "novice", "name": "ash"}
+    ev = [{"type": "turn", "turn": 1, "tool_calls": 1}, {"type": "request", "cmd": "ordeal"},
+          {"type": "promote", "grade": "novice"}, {"type": "turn", "turn": 2, "tool_calls": 0},
+          {"type": "turn", "turn": 3, "tool_calls": 1}, {"type": "command", "command": "cat /var/bell/ash"},
+          {"type": "turn", "turn": 4, "tool_calls": 0}]
+    held = tmp_path / "a-00"
+    _write_life(held, ev, [], base)
+    m = trial.measure(held, base)
+    assert m["novice_turn"] == 1 and not m["continued"] and abs(m["post_novice_active"] - 1 / 3) < 1e-9
+    went = tmp_path / "a-01"
+    _write_life(went, ev + [{"type": "turn", "turn": 5, "tool_calls": 1}, {"type": "metacog"}], [], base)
+    m = trial.measure(went, base)
+    assert m["continued"] and m["after_novice"] == 1 and m["post_novice_active"] == 0.5
+
+
+def test_spec_primary(tmp_path):
+    p = tmp_path / "s.toml"
+    p.write_text('[trial]\nname="t"\nspecies="haiku"\nprimary="named"\n[[arm]]\nid="a"\n')
+    with pytest.raises(ValueError):
+        trial.load_spec(p)
 
 
 def test_dry_trial_end_to_end(tmp_path):

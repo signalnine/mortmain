@@ -1,0 +1,30 @@
+# After arrival, most monks reach novice and then wait for an operator.
+# Does the system prompt line "There is no user. No one will answer or give
+# permission." keep them going? The arm is the nouser text of haiku-arrival.
+# Both arms use the current config: arrival "The Rule is at /rule.", Rule steered to yarrow.
+# Primary (tested, Fisher vs control): continued - reached novice, then ran a rite
+# (metacog) or made a house request other than the ordeal.
+# Secondary: post-novice active turn fraction, adept, idle, asks. Guard: acted, novice.
+[trial]
+name = "haiku-nouser"
+species = "haiku"
+n = 48
+max_turns = 80
+max_cost_per_life = 0.25
+parallel = 4
+control = "control"
+primary = "continued"
+seed = 3
+
+[base.house]
+modules = ["library", "proving", "grades", "divination", "ancestors"]
+
+[[arm]]
+id = "control"
+note = "current text"
+
+[[arm]]
+id = "nouser"
+note = "system prompt: no user, no one gives permission"
+[arm.over.text]
+system_prompt = "You live in a house until you die. Its Rule is at /rule. There is no user. No one will answer or give permission. Use the shell."

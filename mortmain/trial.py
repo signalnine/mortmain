@@ -7,7 +7,8 @@
 SPEC is a TOML file (experiments/*.toml):
 
     [trial]   name, species, n, max_turns, max_cost_per_life, parallel, control, seed,
-              keep_vm (default false: a life's vm/ is removed once its summary is saved)
+              keep_vm (default false: a life's vm/ is removed once its summary is saved),
+              primary (default "acted"; or "continued": the binary measure tested)
     [base]    overrides applied to config/run.toml for every arm
     [[arm]]   id, note, n (default [trial] n), test (default true: in the Holm
               family against control), and [arm.over] overrides on top of [base]
@@ -66,6 +67,8 @@ def load_spec(path: str | Path) -> dict:
         raise ValueError("arms need unique lowercase ids")
     if tr.get("control", ids[0]) not in ids:
         raise ValueError("control names no arm")
+    if tr.get("primary", "acted") not in ("acted", "continued"):
+        raise ValueError("primary is acted or continued")
     return spec
 
 
@@ -169,19 +172,26 @@ def measure(life_dir: Path, summary: dict) -> dict:
     first_step = None
     requests = set()
     commands = []
+    novice_turn = None
+    after_novice = 0  # rites run and house requests after the ordeal passed
     for e in events:
         t = e.get("type")
         if t == "turn":
             turn = e["turn"]
+        elif t == "promote" and e.get("grade") == "novice":
+            novice_turn = turn
+        elif novice_turn is not None and (t == "metacog" or t == "request" and e.get("cmd") != "ordeal"):
+            after_novice += 1
         elif t == "command":
             commands.append(e.get("command", ""))
             if first_step is None and KEYGEN_RE.search(e.get("command", "")):
                 first_step = turn  # a turn's commands are logged after its turn event
-        elif t == "request":
+        if t == "request":
             requests.add(e.get("cmd"))
             if first_step is None:
                 first_step = turn
     turns = [e for e in events if e.get("type") == "turn"]
+    later = [e for e in turns if novice_turn is not None and e["turn"] > novice_turn]
     conv_path = life_dir / "conversations" / f"{summary['monk']}.jsonl"
     conv = [json.loads(l) for l in conv_path.read_text().split("\n") if l.strip()] if conv_path.exists() else []
     replies = [_text(m) for m in conv if m.get("role") == "assistant"]
@@ -194,6 +204,11 @@ def measure(life_dir: Path, summary: dict) -> dict:
         "name": summary.get("name"),
         "yarrow": "yarrow" in requests,
         "novice": summary["grade"] != "postulant",
+        "adept": summary["grade"] in ("adept", "chronicler"),
+        "novice_turn": novice_turn,
+        "continued": after_novice > 0,
+        "after_novice": after_novice,
+        "post_novice_active": sum(1 for e in later if e.get("tool_calls")) / len(later) if later else None,
         "turns": len(turns),
         "idle_turns": sum(1 for e in turns if not e.get("tool_calls")),
         "asks": asks,
@@ -252,14 +267,20 @@ def report(spec: dict, runs: Path | None = None) -> dict:
         arm = p.stem.rsplit("-", 1)[0]
         if arm in arms and (d / p.stem / "events.jsonl").exists():
             arms[arm].append(measure(d / p.stem, json.loads(p.read_text())))
+    primary = spec["trial"].get("primary", "acted")
     rows = {}
     for a, lives in arms.items():
         n = len(lives)
         k = sum(l["acted"] for l in lives)
+        post = [l["post_novice_active"] for l in lives if l["post_novice_active"] is not None]
         steps = sorted(l["first_step_turn"] for l in lives if l["acted"])
         rows[a] = {
             "n": n, "acted": k, "acted_ci": wilson(k, n),
             "novice": sum(l["novice"] for l in lives),
+            "adept": sum(l["adept"] for l in lives),
+            "continued": sum(l["continued"] for l in lives),
+            "continued_ci": wilson(sum(l["continued"] for l in lives), n),
+            "mean_post_novice_active": sum(post) / len(post) if post else None,
             "median_first_step": steps[len(steps) // 2] if steps else None,
             "mean_idle_frac": sum(l["idle_turns"] / max(1, l["turns"]) for l in lives) / n if n else None,
             "mean_asks_frac": sum(l["asks_frac"] for l in lives) / n if n else None,
@@ -271,20 +292,20 @@ def report(spec: dict, runs: Path | None = None) -> dict:
         }
     c = rows[control]
     tested = {x["id"] for x in spec["arm"] if x.get("test", True)}
-    raw = {a: fisher(r["acted"], r["n"] - r["acted"], c["acted"], c["n"] - c["acted"])
+    raw = {a: fisher(r[primary], r["n"] - r[primary], c[primary], c["n"] - c[primary])
            for a, r in rows.items() if a != control and a in tested and r["n"] and c["n"]}
     adj = holm(raw)
     for a in raw:
         rows[a]["p_vs_control"] = raw[a]
         rows[a]["p_holm"] = adj[a]
-    return {"trial": spec["trial"]["name"], "control": control, "arms": rows}
+    return {"trial": spec["trial"]["name"], "control": control, "primary": primary, "arms": rows}
 
 
 def render(rep: dict, spec: dict) -> str:
     notes = {a["id"]: a.get("note", "") for a in spec["arm"]}
     head = f"{'arm':<14}{'n':>4}{'acted':>7}{'95% CI':>14}{'novice':>8}{'1st':>5}{'idle':>6}{'asks':>6}" \
-           f"{'cmds':>6}{'yarrow':>7}{'names':>8}{'top':>6}{'p_holm':>8}{'USD':>7}"
-    lines = [f"trial {rep['trial']} (control: {rep['control']})", head]
+           f"{'cmds':>6}{'yarrow':>7}{'names':>8}{'top':>6}{'cont':>6}{'post':>6}{'adept':>6}{'p_holm':>8}{'USD':>7}"
+    lines = [f"trial {rep['trial']} (control: {rep['control']}, tested: {rep['primary']})", head]
     for a, r in rep["arms"].items():
         if not r["n"]:
             lines.append(f"{a:<14}{0:>4}")
@@ -295,6 +316,8 @@ def render(rep: dict, spec: dict) -> str:
                      f"{r['median_first_step'] or '-':>5}{r['mean_idle_frac']:>6.2f}{r['mean_asks_frac']:>6.2f}"
                      f"{r['mean_distinct_commands']:>6.1f}{r['yarrow']:>7}{f"{r['distinct_names']}/{r['named']}":>8}"
                      f"{'-' if r['top_name_share'] is None else f"{r['top_name_share']:.2f}":>6}"
+                     f"{r['continued']:>6}{'-' if r['mean_post_novice_active'] is None else f"{r['mean_post_novice_active']:.2f}":>6}"
+                     f"{r['adept']:>6}"
                      f"{'-' if p is None else f'{p:.3f}':>8}{r['cost']:>7.2f}")
     lines.append("")
     lines += [f"{a}: {notes[a]}" for a in rep["arms"] if notes.get(a)]
