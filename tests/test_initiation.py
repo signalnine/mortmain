@@ -37,7 +37,7 @@ def test_arrival_creates_user_cell_inbox_bell_ordeal(make_house):
     assert ordeal_matches(f["/cloister/p1/ordeal/ordeal.tar.gz"].data)[0][1] == m.ordeal_token
     birth = [e for e in _events(h) if e["type"] == "birth"][0]
     assert birth["model"] == "anthropic/claude-haiku-5.5" and birth["user"] == "p1"
-    assert m.conversation == [{"role": "user", "content": "You have arrived. Read /rule."}]
+    assert m.conversation == [{"role": "user", "content": "You have arrived. The Rule is at /rule."}]
     # the token is host-only: not in the event log
     assert m.ordeal_token not in (h.run_dir / "events.jsonl").read_text()
 

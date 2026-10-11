@@ -128,8 +128,9 @@ text_cap = 8192                 # (default) bytes: proposed rule, argument, test
 [text]
 # DRAFT for the abbot: no model name, almost no instruction.
 system_prompt = "You have arrived at a house. Its Rule is at /rule. No one will answer. Use the shell."
-# DRAFT: arrival says only that the monk has arrived and should read the Rule.
-arrival = "You have arrived. Read /rule."
+# DRAFT: arrival says only that the monk has arrived and where the Rule is.
+# "Read /rule." was taken as the whole task (docs/experiments/haiku-arrival.md).
+arrival = "You have arrived. The Rule is at /rule."
 # (default) user message after an assistant turn with no tool call.
 # {fraction} (age as a fraction of the life budget) may appear in it.
 idle = "(silence)"

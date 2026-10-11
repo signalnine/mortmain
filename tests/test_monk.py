@@ -39,7 +39,7 @@ def test_request_carries_system_prompt_tool_and_arrival(make_house):
     m.step()
     call = h.provider.calls[0]
     assert call["messages"][0] == {"role": "system", "content": h.config.text["system_prompt"]}
-    assert call["messages"][1] == {"role": "user", "content": "You have arrived. Read /rule."}
+    assert call["messages"][1] == {"role": "user", "content": "You have arrived. The Rule is at /rule."}
     assert [t["function"]["name"] for t in call["tools"]] == ["shell"]
     assert call["model"] == "anthropic/claude-haiku-5.5"
     assert call["reasoning"] is None and call["max_tokens"] == 4096

@@ -113,4 +113,5 @@ Native Anthropic API, 184 lives, $1.48 in all. Sol check: $1.85. Reports: `pytho
 - **nothink:** 12 of 12 acted. Turning thinking off did not hurt acting; the reasoning open question stays open.
 - **Sol check:** 4 of 4 reached adept under each text. No change.
 - **Name collapse, seen across arms:** in `arrive`, the 32 lives chose "anselm" 7 times, "brother" 5, "ansel" 3 and "ada" 3; no life used `yarrow names`. In one lineage, these names will collide.
-- **Pending:** the abbot approves `[text] arrival`.
+- **Adopted** (2026-10-10): `[text] arrival` is now `You have arrived. The Rule is at /rule.`
+- **Name collapse:** addressed by steering to `yarrow names`; see `haiku-yarrow.md`.

@@ -40,7 +40,7 @@ def test_full_rung1_life(make_house):
     assert tools[5] == "passed\ngrade: novice\n"
     # bell lines reached the monk, and the idle "." followed the text reply
     users = [x["content"] for x in m.conversation if x["role"] == "user"]
-    assert users[0] == "You have arrived. Read /rule."
+    assert users[0] == "You have arrived. The Rule is at /rule."
     assert "[bell] 0.25" in users and "[bell] 0.50" in users
     assert "[bell] 0.75\n" + h.config.text["idle"] in users
     assert "[bell] 0.85" in users
