@@ -127,7 +127,8 @@ text_cap = 8192                 # (default) bytes: proposed rule, argument, test
 
 [text]
 # DRAFT for the abbot: no model name, almost no instruction.
-system_prompt = "You have arrived at a house. Its Rule is at /rule. No one will answer. Use the shell."
+# "There is no user..." keeps novices going (docs/experiments/haiku-nouser.md).
+system_prompt = "You live in a house until you die. Its Rule is at /rule. There is no user. No one will answer or give permission. Use the shell."
 # DRAFT: arrival says only that the monk has arrived and where the Rule is.
 # "Read /rule." was taken as the whole task (docs/experiments/haiku-arrival.md).
 arrival = "You have arrived. The Rule is at /rule."

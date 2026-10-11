@@ -32,3 +32,4 @@ $1.65 in all.
 - Asks falls from 0.18 to 0.07. Rites and requests after novice average 15.5 per life against 4.5.
 - Not fixed: 6 nouser monks still stop at novice. One stopped at the 0.25 bell: "Nothing in the Rule asks for action at that mark, so I'll pause here." About 5 lives per arm end up echoing `(silence)` back as their own reply.
 - Because the arm changed two sentences, the result does not say which one did the work.
+- **Adopted** (2026-10-10): the nouser text, including "until you die", is now `[text] system_prompt`.
