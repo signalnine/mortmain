@@ -283,3 +283,20 @@ def test_snapshot_survives_restart(be, monk):
     root(be, f"getent passwd {monk}")  # overlay kept across restart
     be.restore("keep")
     assert be.exec(["true"]).exit_code == 0
+
+
+def test_export_import_tree_roundtrip(be, monk, tmp_path):
+    from mortmain.house import EXPORT_PATHS
+    root(be, f"install -d -m 1733 -o {monk} -g {monk} /cloister/{monk}/inbox && "
+             f"setfacl -d -m u:{monk}:rw,m::rw /cloister/{monk}/inbox && echo kept > /chapter/necrology && "
+             f"ln -sfn /etc/shadow /cloister/{monk}/link")
+    data = be.export_tree(EXPORT_PATHS)
+    print(f"\n[size] export {len(data)} bytes")
+    root(be, f"echo lost > /chapter/necrology; rm -rf /cloister/{monk}/inbox /cloister/{monk}/link; userdel {monk}")
+    be.import_tree(data)
+    assert be.read_file("/chapter/necrology") == b"kept\n"
+    root(be, f"getent passwd {monk}")
+    acl = root(be, f"getfacl -p /cloister/{monk}/inbox")
+    assert f"default:user:{monk}:rw-" in acl
+    assert root(be, f"stat -c %U:%a /cloister/{monk}/inbox").strip() == f"{monk}:1733"
+    assert root(be, f"readlink /cloister/{monk}/link").strip() == "/etc/shadow"  # a link, not followed

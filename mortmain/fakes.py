@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import io
 import itertools
 import json
 import re
@@ -142,6 +143,25 @@ class FakeBackend:
 
     def list_snapshots(self) -> list[str]:
         return list(self.snapshots)
+
+    def export_tree(self, paths: list[str]) -> bytes:
+        import tarfile
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+            for path in sorted(self.files):
+                if any(path == p or path.startswith(p.rstrip("/") + "/") for p in paths):
+                    f = self.files[path]
+                    ti = tarfile.TarInfo(path.lstrip("/"))
+                    ti.size, ti.mode, ti.uid, ti.uname, ti.gname = len(f.data), f.mode, f.uid, f.owner, f.group
+                    tar.addfile(ti, io.BytesIO(f.data))
+        return buf.getvalue()
+
+    def import_tree(self, data: bytes) -> None:
+        import tarfile
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as tar:
+            for ti in tar.getmembers():
+                if ti.isfile():
+                    self.files["/" + ti.name] = FakeFile(tar.extractfile(ti).read(), ti.mode, ti.uname, ti.gname, ti.uid)
 
     def monk_shell_argv(self, user: str, command: str) -> list[str]:
         return ["runuser", "-u", user, "--", "bash", "-lc", command]

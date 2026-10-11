@@ -1,4 +1,4 @@
-"""python -m mortmain run | log verify | log tail"""
+"""python -m mortmain run | fork | log verify | log tail"""
 from __future__ import annotations
 
 import argparse
@@ -93,6 +93,13 @@ def cmd_run(args) -> int:
     return 0
 
 
+def cmd_fork(args) -> int:
+    from .fork import fork
+    d = fork(_runs_root(args), args.src, args.tag, args.lineage)
+    print(f"{d}: run it with `mortmain run --lineage {args.lineage} ...`")
+    return 0
+
+
 def cmd_log(args) -> int:
     path = _runs_root(args) / args.lineage / "events.jsonl"
     if args.log_cmd == "verify":
@@ -136,6 +143,12 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--fake-vm", action="store_true", help="FakeBackend: no VM")
     r.add_argument("--config", help="run.toml path")
     r.set_defaults(fn=cmd_run)
+
+    fk = sub.add_parser("fork", help="new lineage from a snapshot export of another")
+    fk.add_argument("--from", dest="src", required=True, help="source lineage")
+    fk.add_argument("--tag", required=True, help="snapshot tag, e.g. gen-3")
+    fk.add_argument("--lineage", required=True, help="new lineage")
+    fk.set_defaults(fn=cmd_fork)
 
     lg = sub.add_parser("log", help="event log")
     lsub = lg.add_subparsers(dest="log_cmd", required=True)

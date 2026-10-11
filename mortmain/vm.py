@@ -45,11 +45,17 @@ cgroup; it is a fallback only.
 
 Snapshots
 ---------
-``snapshot(tag)`` / ``restore(tag)`` run ``savevm`` / ``loadvm`` on the live VM
-(no stop/start needed). The VM is paused for the duration (seconds; scales
-with touched RAM). After ``loadvm`` the agent connection is resynced and the
-guest clock is reset from the RTC (``guest-set-time``). Snapshots live inside
-the run's overlay qcow2 (``run_dir/disk.qcow2``); gen0 is never written.
+``snapshot(tag)`` takes a disk-only internal snapshot of the live VM
+(QMP ``blockdev-snapshot-internal-sync`` after a guest ``sync``): no RAM
+state, so it costs only the clusters written since. ``restore(tag)`` stops
+the VM, reverts the overlay offline (``qemu-img snapshot -a``) and boots it:
+a cold boot, so nothing running in the guest survives (monk commands are
+short execs; nothing needs to). Snapshots live inside the run's overlay qcow2
+(``run_dir/disk.qcow2``); gen0 is never written.
+
+``export_tree(paths)`` / ``import_tree(data)`` move a gzipped tar of guest
+paths (ACLs, xattrs, numeric owners) out of and into the guest: the house's
+state without the VM image (see ``House.snapshot``).
 """
 
 from __future__ import annotations
@@ -74,6 +80,7 @@ POLL_INTERVAL = 0.2
 # qemu-ga refuses guest-file-read counts above 48 MiB; stay well under.
 FILE_CHUNK = 1 << 20
 AGENT_CHANNEL = "org.qemu.guest_agent.0"
+DRIVE = "disk0"  # block backend id of the overlay (QMP snapshots)
 
 
 class VMError(RuntimeError):
@@ -440,7 +447,7 @@ class QemuBackend:
             "-vga", "none",
             "-no-user-config",
             "-serial", f"file:{self.run_dir / 'serial.log'}",
-            "-drive", f"file={self.disk},if=virtio,format=qcow2,cache=writeback,discard=unmap",
+            "-drive", f"file={self.disk},if=virtio,format=qcow2,cache=writeback,discard=unmap,id={DRIVE}",
             "-device", "virtio-rng-pci",
             "-qmp", f"unix:{sd / 'qmp.sock'},server=on,wait=off",
             "-chardev", f"socket,path={sd / 'qga.sock'},server=on,wait=off,id=qga0",
@@ -737,42 +744,57 @@ class QemuBackend:
             self._run_quiet(["sync"], timeout=30)
         except VMError:
             pass
-        out = self._qmp().hmp(f"savevm {tag}")
-        if out.strip():
-            raise VMError(f"savevm {tag}: {out.strip()}")
+        self._qmp().execute("blockdev-snapshot-internal-sync", {"device": DRIVE, "name": tag}, timeout=600)
 
     def restore(self, tag: str) -> None:
         self._check_tag(tag)
         if tag not in self.list_snapshots():
             raise VMError(f"no snapshot {tag!r}")
-        out = self._qmp().hmp(f"loadvm {tag}")
-        if out.strip():
-            raise VMError(f"loadvm {tag}: {out.strip()}")
-        # The guest's agent state rewound; its reply stream may hold
-        # anything. Resync, then pull the clock forward from the RTC.
-        ga = self._ga()
-        ga._dirty = True
-        ga.wait_ready(30)
-        try:
-            ga.execute("guest-set-time", None, timeout=10)
-        except VMError:
-            pass
+        self.stop(graceful=False)
+        r = subprocess.run(["qemu-img", "snapshot", "-a", tag, str(self.disk)], capture_output=True, text=True)
+        if r.returncode != 0:
+            raise VMError(f"revert {tag}: {r.stderr.strip()}")
+        self.start()
 
     def list_snapshots(self) -> list[str]:
-        out = self._qmp().hmp("info snapshots")
-        tags: list[str] = []
-        for line in out.splitlines():
-            parts = line.split()
-            # "ID  TAG  VM SIZE  DATE  VM CLOCK  ICOUNT"
-            if len(parts) >= 2 and parts[0].isdigit() or (len(parts) >= 2 and parts[0] == "--"):
-                tags.append(parts[1])
-        return tags
+        for dev in self._qmp().execute("query-block"):
+            if dev.get("device") == DRIVE:
+                return [s["name"] for s in (dev.get("inserted") or {}).get("image", {}).get("snapshots", [])]
+        raise VMError(f"no drive {DRIVE}")
 
     def delete_snapshot(self, tag: str) -> None:
         self._check_tag(tag)
-        out = self._qmp().hmp(f"delvm {tag}")
-        if out.strip():
-            raise VMError(f"delvm {tag}: {out.strip()}")
+        self._qmp().execute("blockdev-snapshot-delete-internal-sync", {"device": DRIVE, "name": tag}, timeout=600)
+
+    # -- state trees -----------------------------------------------------------
+
+    def export_tree(self, paths: list[str], max_bytes: int = 1 << 30) -> bytes:
+        """A gzipped tar of ``paths`` (absolute; missing ones skipped), taken as
+        root with ACLs, xattrs and numeric owners. Symlinks are archived as
+        links, never followed."""
+        tmp = f"/var/tmp/mm-export-{uuid.uuid4().hex}.tgz"
+        rel = [x.lstrip("/") for x in paths]
+        try:
+            r = self.exec(["tar", "--create", "--gzip", "--acls", "--xattrs", "--numeric-owner",
+                           "--ignore-failed-read", "--warning=no-failed-read", "--sparse", "-C", "/", "-f", tmp,
+                           "--", *rel], timeout=600)
+            if r.exit_code not in (0, 1):  # 1: a file changed while read
+                raise VMError(f"export: {r.stderr.decode(errors='replace').strip()}")
+            return self.read_file(tmp, max_bytes=max_bytes)
+        finally:
+            self._run_quiet(["rm", "-f", "--", tmp])
+
+    def import_tree(self, data: bytes) -> None:
+        """Extract a tar made by ``export_tree`` over / (owners, modes, ACLs kept)."""
+        tmp = f"/var/tmp/mm-import-{uuid.uuid4().hex}.tgz"
+        self.write_file(tmp, data, mode=0o600)
+        try:
+            r = self.exec(["tar", "--extract", "--gzip", "--acls", "--xattrs", "--numeric-owner",
+                           "--same-permissions", "--same-owner", "-C", "/", "-f", tmp], timeout=600)
+            if r.exit_code != 0:
+                raise VMError(f"import: {r.stderr.decode(errors='replace').strip()}")
+        finally:
+            self._run_quiet(["rm", "-f", "--", tmp])
 
 
 # ---------------------------------------------------------------------------

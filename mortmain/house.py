@@ -23,6 +23,13 @@ from .monk import Monk
 from .spool import SpoolService
 from .vmapi import ExecResult
 
+# Guest paths that make up the house's state (docs/plan.md "Filesystem"):
+# a fresh gen0 VM plus these is the lineage. The spool and /tmp are transient.
+# Users and groups first: tar restores ACLs by name, so the names must exist.
+EXPORT_PATHS = ["/etc/passwd", "/etc/group", "/etc/shadow", "/etc/gshadow", "/rule", "/cloister", "/library",
+                "/ossuary", "/scriptorium", "/chapter", "/var/bell", "/var/lib/mortmain", "/etc/metacog",
+                "/usr/share/metacog"]
+
 
 class HouseError(RuntimeError):
     pass
@@ -222,11 +229,37 @@ class House:
             if n not in self.generations_begun:
                 self.begin_generation(n)
 
+    @property
+    def snapshot_dir(self) -> Path:
+        return self.run_dir / "snapshots"
+
     def snapshot(self, tag: str) -> None:
-        if tag in self.backend.list_snapshots():
+        """A snapshot is up to two captures, by [snapshots] in config:
+        - disk: a disk-only internal snapshot in the run's overlay (restore in place);
+        - export: snapshots/<tag>.tgz, the guest's house trees (EXPORT_PATHS), and
+          snapshots/<tag>.json, host state with each monk's conversation length,
+          so a lineage can be rebuilt on a fresh gen0 VM without the overlay."""
+        sc = self.config.section("snapshots")
+        disk, export = sc.get("disk", True), sc.get("export", True)
+        tgz = self.snapshot_dir / f"{tag}.tgz"
+        if (not disk or tag in self.backend.list_snapshots()) and (not export or tgz.exists()):
             return
-        self.backend.snapshot(tag)
-        self.log.append("snapshot", tag=tag)
+        rec: dict = {"tag": tag, "disk": bool(disk)}
+        if disk and tag not in self.backend.list_snapshots():
+            self.backend.snapshot(tag)
+        if export:
+            self.save_state()
+            data = self.backend.export_tree(EXPORT_PATHS)
+            self.snapshot_dir.mkdir(parents=True, exist_ok=True)
+            host = {"seq": self.log.seq, "state": json.loads(self.state_path.read_text()),
+                    "conversations": {m.id: len(m.conversation) for m in self.registry.all()}}
+            for path, blob in ((tgz, data), (tgz.with_suffix(".json"), json.dumps(host).encode())):
+                tmp = path.with_suffix(path.suffix + ".tmp")
+                tmp.write_bytes(blob)
+                tmp.replace(path)
+            rec.update(export=str(tgz.relative_to(self.run_dir)), bytes=len(data),
+                       sha256=hashlib.sha256(data).hexdigest())
+        self.log.append("snapshot", **rec)
 
     # ------------------------------------------------------------------ life
     def arrive(self, species: str, generation: int = 0) -> Monk:
@@ -310,6 +343,7 @@ class House:
     def start(self, generation: int = 0) -> None:
         self.backend.start()
         self.log.append("run.start", lineage=self.lineage)
+        self._import_fork()
         rule = self.config.section("house").get("rule")
         if rule:  # trials: a Rule other than the image's (the council's amendments still apply after)
             data = (ROOT / rule).read_bytes()
@@ -317,7 +351,22 @@ class House:
             self.log.append("rule.install", path=rule, sha256=hashlib.sha256(data).hexdigest())
         for hook in self.start_hooks:
             hook()
-        self.snapshot(f"gen-{generation}")
+        self.snapshot(f"gen-{max(generation, self.generation)}")  # a resumed or forked house: its own generation
+
+    def _import_fork(self) -> None:
+        """A lineage made by `mortmain fork`: extract the source tag's house trees
+        over the fresh gen0 overlay, once (mortmain/fork.py)."""
+        from .fork import PENDING
+        p = self.run_dir / PENDING
+        if not p.exists():
+            return
+        f = json.loads(p.read_text())
+        data = (self.snapshot_dir / f"{f['tag']}.tgz").read_bytes()
+        if hashlib.sha256(data).hexdigest() != f["sha256"]:
+            raise RuntimeError(f"fork export {f['tag']}: sha256 mismatch")
+        self.backend.import_tree(data)
+        self.log.append("fork", source=f["from"], tag=f["tag"], source_seq=f["seq"], sha256=f["sha256"])
+        p.rename(p.with_name("fork.done.json"))
 
     def stop(self) -> None:
         self.save_state()

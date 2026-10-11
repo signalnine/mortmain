@@ -51,6 +51,14 @@ class VMBackend(Protocol):
 
     def list_snapshots(self) -> list[str]: ...
 
+    def export_tree(self, paths: list[str]) -> bytes:
+        """Gzipped tar of guest paths (owners, modes, ACLs); missing paths skipped."""
+        ...
+
+    def import_tree(self, data: bytes) -> None:
+        """Extract an export_tree tar over the guest's /."""
+        ...
+
     def monk_shell_argv(self, user: str, command: str) -> list[str]:
         """argv running `bash -lc command` as user in its cgroup slice, cwd = home."""
         ...

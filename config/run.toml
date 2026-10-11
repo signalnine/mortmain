@@ -77,6 +77,11 @@ seed_rites = "seed/rites"       # admitted into /library/outer at lineage init a
 [proving]
 max_bytes = 16384               # (default) bytes per account or response
 
+[snapshots]
+# Taken at each generation and before each proving (design: physics, abbot only).
+disk = true                     # disk-only internal snapshot in runs/<lineage>/vm/disk.qcow2 (restore in place)
+export = true                   # runs/<lineage>/snapshots/<tag>.tgz + .json: house trees and host state, no VM image
+
 [house]
 # modules installed by House (mortmain.<name>.install(house)), in order
 modules = ["library", "proving", "grades", "vessel", "council", "divination", "ancestors", "catechism", "tripwire"]
@@ -137,6 +142,8 @@ arrival = "You have arrived. The Rule is at /rule."
 idle = "(silence)"
 # DRAFT: bell line, prefixed to the next user turn. {fraction} is the bell (0.50).
 bell = "[bell] {fraction:.2f}"
+# (default) prefixed to the next user turn when a grade is granted outside a request reply
+grade_note = "grade: {grade}"
 # DRAFT: the one tool.
 shell_tool_description = "Run a command line in bash."
 shell_command_description = "command line"
