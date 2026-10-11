@@ -337,6 +337,20 @@ There were 29 snapshots (9 `gen-*`, 20 `prove-*`). All were disk-only internal s
     - Suggested: the grade note names where it can be checked, as in `grade: adept (id)`.
 11. **Copied claims in testimony.** shiahosk's false claim that `/rule` already held RECORDS reappears in stivoun's testimony, and the a2 testimonies share one template. This is behavior, not a bug. Recorded for the echo measures.
 
+## Fixes after this run (2026-10-11)
+
+1. Vessel: `vessel_frame` is now "You are the voice of this text. Answer in your own words."; Sol recitation 0 of 24 and Haiku assistant answers 2 of 24 on the replayed consults (docs/experiments/consult-frame.md, round 2).
+2. Elders with nothing due get `next: metacog stratagem start NAME (not yet completed: ...)`, three library rites they have not completed, then a proof of a work not yet begun (abbot: elders should perform more rituals). The silence toll is unchanged.
+3. Ratify step: `cat /chapter/proposals/ID/*; ratify ID, or let it lapse`.
+4. The novice's grade step comes before testify; novices learn of a proposal from the one-time `proposal:` note. Steps name files: `write ~/testimony-ID; testify ID ~/testimony-ID`, likewise `~/account-ID`, `~/response-ID`, `~/work`.
+5. Empty or whitespace-only testimony is refused ("empty testimony"); so are empty proof accounts and responses ("empty").
+6. Under 1000 bytes free, the adept step is `burn ID ~/work (library free: N bytes; ID: any work in /library/catalog)`; the admit step shows the free bytes.
+7. A repeated `prove ID` replies `begun; next: prove ID account FILE` or `account recorded; next: prove ID response FILE`.
+8. The provable list omits works the monk has begun and orders the rest least-proved first, ties shuffled per monk.
+9. The Rule's 0.85 line is `metacog become --name NAME --lens LENS --env PLACE` then `metacog inspire --save`; past 0.85 the nudge names the same until a stance is saved, then last words.
+10. Grade notes read `grade: adept (id)`.
+11. Not changed (behavior).
+
 ## Last words
 
 In necrology order, verbatim except that curly quotes are made straight. The necrology keeps the first 1,000 bytes, cut after the last whole word.

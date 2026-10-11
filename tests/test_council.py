@@ -158,7 +158,8 @@ def test_testify_refusals(ch):
     assert c.testify(a, {"id": "a1", "text": "x"}, None).err == "not a witness"
     assert c.testify(early, {"id": "a1", "text": 3}, None).err == "bad text"
     assert c.testify(early, {"id": "a1", "text": "x" * 8193}, None).err == "too long: 8192 bytes"
-    assert c.testify(early, {"id": "a1", "text": ""}, None).ok   # what it says is up to the monk
+    assert c.testify(early, {"id": "a1", "text": " \n"}, None).err == "empty testimony"
+    assert c.testify(early, {"id": "a1", "text": "."}, None).ok   # what it says is up to the monk
     assert c.testify(early, {"id": "a1", "text": "y"}, None).err == "already testified"
     during = h.arrive("haiku")         # born while the proposer lives
     h.die(a, "limit")

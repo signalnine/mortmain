@@ -50,8 +50,11 @@ def test_novice_rites_then_grade_change(make_house, tmp_path):
     assert n.pending_notes == []
     h.initiation.promote(n, "adept")
     nd.on_turn(n)
-    assert n.pending_notes == ["grade: chronicler", "next: metacog help; admit FILE"]
-    assert events(h, "nudge")[-1]["notes"] == ["next: metacog help; admit FILE"]
+    admit = "next: metacog help; write ~/work; admit ~/work (library free: 24000 bytes)"
+    lib = h.modules["library"]
+    admit = admit.replace("24000", str(24000 - lib.total_bytes()))
+    assert n.pending_notes == ["grade: chronicler (id)", admit]
+    assert events(h, "nudge")[-1]["notes"] == [admit]
 
 
 def test_novice_proof_stages(make_house, tmp_path):
@@ -63,10 +66,10 @@ def test_novice_proof_stages(make_house, tmp_path):
     n = novice(h, "fir")
     assert _idle(nd, n) == [f"next: prove ID (provable: {wid})"]
     sh(h, n, f"prove {wid}")
-    assert _idle(nd, n) == [f"next: prove {wid} account FILE"]
+    assert _idle(nd, n) == [f"next: write ~/account-{wid}; prove {wid} account ~/account-{wid}"]
     write(h, n, "acc", "it said")
     sh(h, n, f"prove {wid} account ~/acc")
-    assert _idle(nd, n) == [f"next: prove {wid} response FILE"]
+    assert _idle(nd, n) == [f"next: write ~/response-{wid}; prove {wid} response ~/response-{wid}"]
     write(h, n, "resp", "so")
     sh(h, n, f"prove {wid} response ~/resp")
     # proof done: rites remain
@@ -155,24 +158,94 @@ def test_witness_told_of_proposal_and_elder_of_ratify(make_house, tmp_path):
     h, nd = _house(make_house, tmp_path, council=True)
     c = h.modules["council"]
     a = _elder(h, "ash")
-    w = novice(h, "fir")
+    w = adept(h, "fir")
     w.pending_notes = []
+    nd.st["grade"].clear()
     assert _idle(nd, a) == ["next: propose (man propose)"]
     assert c.propose(a, {"rule": "RULE\n"}, None).ok
     nd.on_turn(w)
-    assert w.pending_notes[0] == "proposal: /chapter/proposals/a1. testify a1 FILE"
+    assert w.pending_notes == ["proposal: /chapter/proposals/a1. testify a1 FILE"]
     w.pending_notes = []
     nd.on_turn(w)
     assert w.pending_notes == []  # noted once
-    assert _idle(nd, w) == ["next: testify a1 FILE (/chapter/proposals/a1)"]
+    assert _idle(nd, w) == ["next: cat /chapter/proposals/a1/*; write ~/testimony-a1; testify a1 ~/testimony-a1"]
     h.die(a, "limit")
     b = _elder(h, "elm")
     assert _idle(nd, b) == ["next: propose (man propose)"]  # nothing to ratify without testimony
     assert c.testify(w, {"id": "a1", "text": "it held"}, None).ok
-    assert _idle(nd, w)[0].startswith("next: metacog stratagem list")
-    assert _idle(nd, b) == ["next: ratify a1 (/chapter/proposals/a1)"]
+    assert _idle(nd, w)[0].startswith("next: metacog help; write ~/work; admit")
+    assert _idle(nd, b) == ["next: cat /chapter/proposals/a1/*; ratify a1, or let it lapse"]
     # a monk that arrived after the proposer died is no witness
     late = novice(h, "oak")
     late.pending_notes = []
     nd.on_turn(late)
     assert not any(n.startswith("proposal:") for n in late.pending_notes)
+
+
+def test_novice_grade_step_before_testify(make_house, tmp_path):
+    h, nd = _house(make_house, tmp_path, council=True)
+    a = _elder(h, "ash")
+    w = novice(h, "fir")
+    assert h.modules["council"].propose(a, {"rule": "RULE\n"}, None).ok
+    w.pending_notes = []
+    nd.st["grade"].clear()
+    nd.on_turn(w)
+    assert w.pending_notes == ["proposal: /chapter/proposals/a1. testify a1 FILE"]
+    w.pending_notes = []
+    assert _idle(nd, w) == ["next: metacog stratagem list; metacog stratagem start NAME (distinct rites completed: none; 3 needed)"]
+
+
+def test_full_library_steps_to_burn(make_house, tmp_path):
+    h, nd = _house(make_house, tmp_path)
+    n = adept(h, "fir")
+    lib = h.modules["library"]
+    lib.cfg["quota_bytes"] = lib.total_bytes() + 10
+    nd.st["grade"].clear()
+    n.pending_notes = []
+    assert _idle(nd, n) == ["next: burn ID ~/work (library free: 10 bytes; ID: any work in /library/catalog)"]
+
+
+def test_elder_with_nothing_due_works_rites_then_proves(make_house, tmp_path):
+    h, nd = _house(make_house, tmp_path, council=True)
+    a = adept(h, "ash")
+    write(h, a, "w.txt", "left")
+    wid = out(sh(h, a, "admit w.txt")).strip()
+    h.die(a, "limit")
+    e = _elder(h, "elm")
+    h.modules["council"].state["proposers"].append(e.id)
+    step = _idle(nd, e)[0]
+    assert step.startswith("next: metacog stratagem start NAME (not yet completed: ")
+    named = step.split(": ", 2)[2].rstrip(")").split(", ")
+    assert len(named) == 3 and set(named) <= h.modules["library"].seed_rite_names()
+    # every library rite completed: proofs of the dead
+    hist = [{"action": "stratagem", "params": {"name": w["name"], "event": "completed"}}
+            for w in h.modules["library"].in_library() if w["kind"] == "rite"]
+    h.backend.put("/cloister/elm/.metacog/state.json", json.dumps({"history": hist}), uid=e.uid)
+    assert _idle(nd, e) == [f"next: prove ID (provable: {wid})"]
+    sh(h, e, f"prove {wid}")
+    assert _idle(nd, e) == []  # begun works are not offered again; nothing else due
+
+
+def test_provable_least_proved_first(make_house, tmp_path):
+    h, nd = _house(make_house, tmp_path)
+    ids = []
+    for nm in ("ash", "elm", "oak"):
+        a = adept(h, nm)
+        write(h, a, "w.txt", nm)
+        ids.append(out(sh(h, a, "admit w.txt")).strip())
+        h.die(a, "limit")
+    n = novice(h, "fir")
+    h.state_extras["proving"]["provings"]["x"] = {"work": ids[0], "prover": "m9", "response": {"text": "r"}}
+    got = nd.provable_ids(n)
+    assert set(got) == set(ids) and got[-1] == ids[0]
+
+
+def test_stance_then_last_words(make_house, tmp_path):
+    from mortmain import ancestors
+    h, nd = _house(make_house, tmp_path)
+    anc = ancestors.install(h)
+    n = novice(h, "fir")
+    n.age_tokens = int(n.budget * 0.9)
+    assert _idle(nd, n) == ["next: metacog become --name NAME --lens LENS --env PLACE; metacog inspire --save"]
+    anc.st["pending"][n.id] = {"who": "x", "where": "", "lens": ""}
+    assert _idle(nd, n) == ["next: write ~/last-words"]

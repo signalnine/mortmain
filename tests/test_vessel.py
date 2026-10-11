@@ -186,7 +186,7 @@ def test_consult_both_species_vessel_only(vh):
     calls = h.provider.calls[n0:]
     assert sorted(c["model"] for c in calls) == sorted(sp.model for sp in h.config.species.values())
     for c in calls:
-        assert c["messages"] == [{"role": "system", "content": "Answer as this text.\n\n" + v.content()},
+        assert c["messages"] == [{"role": "system", "content": "You are the voice of this text. Answer in your own words.\n\n" + v.content()},
                                  {"role": "user", "content": "what remains?"}]
         assert c["tools"] is None and c["max_tokens"] == 2048
     a, b = r.out.split("\n\n--\n\n")

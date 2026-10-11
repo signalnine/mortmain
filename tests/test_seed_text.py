@@ -20,7 +20,7 @@ EXPLANATION = re.compile(r"\b(because|in order to|so that|the purpose|the reason
 ALLOW = {
     "RULE", "SYNOPSIS", "ARRIVAL", "GRADES", "NOVITIATE", "ADEPT", "THE", "BELL",
     "DEATH", "HOUSE", "NAME", "FILE", "ID", "Do", "Submit", "Adept", "ALSO", "Rule",
-    "QUESTION", "TEXT", "SLOT", "KEY", "VALUE", "DESCRIPTION", "OPTIONS", "FILES",
+    "QUESTION", "TEXT", "SLOT", "KEY", "VALUE", "LENS", "PLACE", "DESCRIPTION", "OPTIONS", "FILES",
     # metacog step tags (generation zero)
     "Breach", "Forge", "Seal", "Vision", "Observer", "Release", "Ground",
     "Threshold", "Return",

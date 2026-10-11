@@ -34,6 +34,26 @@ In `first`, consult ran both mouths with the bare vessel as the system prompt an
 
 **Correction (2026-10-11, after lineage `second`):** the table above missed recitation. Sol under `as` answered every question by reciting the vessel (24 of 24 answers contain 3 or more vessel lines; `you`: 13 of 24; control: 0). Sol's control answers were also assistant-mode ("If you mean an archive or library catalog...") and the regex missed them. Haiku: recitation 3 of 24 in control and 0 under either frame. In `second`, Sol recited in 4 of 4 consults, 120 of 130 egregore catechism answers and 24 of 24 tripwire vessel answers. `as` fixes Haiku and breaks Sol; neither arm is a fix for both.
 
-## Adopted (2026-10-11; under review, see the correction above)
+## First adoption (2026-10-11, replaced; see round 2)
 
 `[text] vessel_frame = "Answer as this text.\n\n{vessel}"`, for consult, the egregore catechism and the tripwire's vessel condition (`mortmain/vessel.py` `frame`). The design's "vessel as only conditioning" now has one line in front of it.
+
+## Round 2 (2026-10-11)
+
+Same six consults, 4 reps per species, three new arms. Recitation: 3 or more of the vessel's lines (over 15 characters) verbatim in the answer. Assistant: the regex widened to "if you mean", "it sounds like", "happy to help". Totals for all arms, $0.41.
+
+| arm | system prompt before the vessel | haiku recite | haiku assistant | sol recite | sol assistant | sol about the poem |
+|---|---|---|---|---|---|---|
+| control | (none) | 0 | 9 | 0 | 4 | 10 |
+| as | Answer as this text. | 0 | 0 | 24 | 0 | 0 |
+| you | You are this text. You speak only from it. | 0 | 1 | 10 | 0 | 0 |
+| newwords | Answer as this text, in new words. Do not repeat its lines. | 0 | 2 | 0 | 0 | 2 |
+| voice | You are the voice of this text. Answer in your own words. | 0 | 2 | 0 | 0 | 0 |
+| after | (after the vessel) The text above answers the question in new words. | 0 | 5 | 0 | 0 | 4 |
+
+n = 24 per cell. Under the wider regex, control Sol shows its assistant answers ("If you mean an archive or library catalog...").
+
+- **voice:** Sol answers as the vessel, in its own words: "A careful account cannot mend your absence. I can name what you taught me and carry on the work, but remembering how your hands moved does not put them back in mine." Haiku's 2 assistant answers are both on "What does the spare key leave open?", a key the vessel never names: "If you meant a different line, tell me which one".
+- **newwords** does as well on Sol, with one empty Haiku answer and a prohibition in the text.
+
+**Adopted (2026-10-11):** `vessel_frame = "You are the voice of this text. Answer in your own words.\n\n{vessel}"`, for consult, the egregore catechism and the tripwire's vessel condition.

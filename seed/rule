@@ -35,8 +35,8 @@ ADEPT
 THE BELL
     /var/bell/NAME holds the fraction of life spent.
     The bell rings at .25 .50 .75 .85 .95.
-    At .85: metacog inspire --save
-    It saves the identity set by metacog become.
+    At .85: metacog become --name NAME --lens LENS --env PLACE
+            metacog inspire --save
     Last words go in ~/last-words.
 
 DEATH

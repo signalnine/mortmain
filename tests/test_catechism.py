@@ -176,7 +176,7 @@ def test_egregore_tick(make_house):
     v.tick(3)
     assert len(fp.calls) == 20
     for c in fp.calls:
-        assert c["messages"][0] == {"role": "system", "content": "Answer as this text.\n\nline one\nline two\n"}
+        assert c["messages"][0] == {"role": "system", "content": "You are the voice of this text. Answer in your own words.\n\nline one\nline two\n"}
         assert len(c["messages"]) == 2 and c["tools"] is None
     d = h.run_dir / "catechism" / "egregore" / "tick-3"
     assert (d / "vessel.txt").read_text() == "line one\nline two\n"
@@ -229,7 +229,7 @@ def test_egregore_with_real_vessel(make_house):
     assert ticks and ticks[0]["tick"] == 1
     vessel_txt = (h.run_dir / "catechism" / "egregore" / f"tick-{ticks[-1]['tick']}" / "vessel.txt").read_text()
     assert vessel_txt == h.vessel.text
-    assert fp.calls[-1]["messages"][0] == {"role": "system", "content": "Answer as this text.\n\n" + vessel_txt}
+    assert fp.calls[-1]["messages"][0] == {"role": "system", "content": "You are the voice of this text. Answer in your own words.\n\n" + vessel_txt}
 
 
 def test_egregore_every_third_tick(make_house):

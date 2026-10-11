@@ -184,7 +184,7 @@ def test_profess_then_ordeal_promotes_in_reply(make_house):
     assert m.grade == "postulant"
     h.backend.put("/cloister/elm/ordeal/answer", m.ordeal_token, uid=m.uid)
     r = _req(h, m, "ordeal", {})
-    assert r["ok"] and r["out"] == "passed\ngrade: novice"
+    assert r["ok"] and r["out"] == "passed\ngrade: novice (id)"
     assert m.grade == "novice"
 
 

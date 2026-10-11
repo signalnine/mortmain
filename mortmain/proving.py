@@ -79,6 +79,11 @@ class Proving:
         rec = self.st["provings"].get(key)
         if stage == "begin":
             if rec is not None:
+                # a repeated begin says which stage is due, not only that it was begun
+                if not rec.get("account"):
+                    return self._err("prove_begun", id=wid)
+                if not rec.get("response"):
+                    return self._err("prove_accounted", id=wid)
                 return self._err("prove_done")
             return self._begin(monk, w, key)
         if rec is None:
@@ -87,6 +92,8 @@ class Proving:
         cap = int(h.config.section("proving").get("max_bytes", 16384))
         if not isinstance(body, str) or len(body.encode()) > cap:
             return self._err("too_large")
+        if not body.strip():
+            return self._err("prove_empty")
         if stage == "account":
             if rec.get("account"):
                 return self._err("prove_done")

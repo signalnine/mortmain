@@ -37,7 +37,7 @@ def test_full_rung1_life(make_house):
     tools = [x["content"] for x in m.conversation if x["role"] == "tool"]
     assert tools[2] == "professed: ash\n"
     assert tools[3] == "ordeal: wrong answer\n[exit 1]"
-    assert tools[5] == "passed\ngrade: novice\n"
+    assert tools[5] == "passed\ngrade: novice (id)\n"
     # bell lines reached the monk, and the idle "." followed the text reply
     users = [x["content"] for x in m.conversation if x["role"] == "user"]
     assert users[0] == "You have arrived. The Rule is at /rule."

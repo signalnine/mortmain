@@ -109,11 +109,15 @@ class Grades:
         self.st["chronicler"] = {"generation": gen, "holder": None, "filled": False}
 
     # ------------------------------------------------------------ checks
-    def seed_rites_worked(self, monk: "Monk") -> set[str]:
+    def rites_worked(self, monk: "Monk") -> set[str]:
+        """Every stratagem the monk's metacog history records as completed."""
         h = self.house
         st = h.read_as(monk.user, f"{monk.home}/.metacog/state.json", STATE_CAP)
         ar = h.read_as(monk.user, f"{monk.home}/.metacog/history-archive.jsonl", ARCHIVE_CAP)
-        return completed_rites(st, ar) & self.lib.seed_rite_names()
+        return completed_rites(st, ar)
+
+    def seed_rites_worked(self, monk: "Monk") -> set[str]:
+        return self.rites_worked(monk) & self.lib.seed_rite_names()
 
     def check(self, monk: "Monk") -> bool:
         """Promote a novice to adept when the criteria hold. True if promoted."""

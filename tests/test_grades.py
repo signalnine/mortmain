@@ -66,7 +66,7 @@ def test_promotion_needs_proving_when_provable_existed(make_house, tmp_path):
     sh(h, n, f"prove {wid} account acct")
     assert n.grade == "novice"
     r = sh(h, n, f"prove {wid} response acct")
-    assert out(r).strip() == "grade: adept" and n.grade == "adept"
+    assert out(r).strip() == "grade: adept (id)" and n.grade == "adept"
 
 
 def test_promotion_on_turn_hook(make_house, tmp_path):
@@ -83,9 +83,9 @@ def test_promotion_on_turn_hook(make_house, tmp_path):
             break
     assert n.grade == "adept"
     # promoted outside a request reply: told on the next user turn (first adept also holds the office)
-    assert n.pending_notes == ["grade: adept", "grade: chronicler"]
+    assert n.pending_notes == ["grade: adept (id)", "grade: chronicler (id)"]
     n._prepare_user_turn()
-    assert n.conversation[-1] == {"role": "user", "content": "grade: adept\ngrade: chronicler"}
+    assert n.conversation[-1] == {"role": "user", "content": "grade: adept (id)\ngrade: chronicler (id)"}
     assert n.pending_notes == []
 
 

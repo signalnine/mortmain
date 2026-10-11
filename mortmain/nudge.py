@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 LAST_WORDS_AT = 0.85
 MAX_IDS = 5
 MAX_MAIL = 3
+BURN_BELOW = 1000  # bytes free in the library under which the step is burn, not admit
 SHOWN_NAME = re.compile(r"[^\x21-\x7e]")
 # root lists the inbox: regular files, not links, not owned by the cell's monk
 LIST_INBOX = ["find", "{inbox}", "-mindepth", "1", "-maxdepth", "1", "-type", "f", "!", "-user", "{uid}",
@@ -130,6 +131,10 @@ class Nudge:
 
     # --------------------------------------------------------- next step
     def next_step(self, monk: "Monk") -> str | None:
+        """The one step due, in order: arrival; at 0.85+ the stance, then last
+        words; the novice's grade step; testify (short-lived) or ratify (elder);
+        admit, or burn when the library has no room; propose (elder); then, for
+        an elder with nothing due, a rite not yet completed, then a proof."""
         h, t = self.house, self.t
         if monk.grade == "postulant":
             if monk.name is None and monk.pending_name is None:
@@ -137,10 +142,18 @@ class Nudge:
             if not monk.ordeal_passed:
                 return t["step_ordeal"]
             return None
-        if monk.fraction >= LAST_WORDS_AT and h.read_as(monk.user, f"{monk.home}/last-words", 1) in (None, b""):
-            return t["step_last_words"]
+        if monk.fraction >= LAST_WORDS_AT:
+            anc = h.modules.get("ancestors")
+            if anc is not None and monk.id not in anc.st["pending"]:
+                return t["step_stance"]
+            if h.read_as(monk.user, f"{monk.home}/last-words", 1) in (None, b""):
+                return t["step_last_words"]
         from .council import role
         elder = role(h, monk) == "elder"
+        if monk.grade == "novice":
+            step = self.novice_step(monk)
+            if step:
+                return step
         if elder:
             ids = self.ratifiable(monk)
             if ids:
@@ -149,16 +162,52 @@ class Nudge:
             ids = self.witness_of(monk)
             if ids:
                 return t["step_testify"].format(id=ids[0])
-        if monk.grade == "novice":
-            return self.novice_step(monk)
         lib = h.modules.get("library")
         if lib is not None and GRADE_RANK.get(monk.grade, 0) >= GRADE_RANK["adept"] \
                 and not lib._mrec(monk)["admitted"]:
-            return t["step_admit"]
+            free = max(0, int(lib.cfg.get("quota_bytes", 24000)) - lib.total_bytes())
+            if free < min(BURN_BELOW, lib.allowance_left(monk)):
+                return t["step_burn"].format(free=free)
+            return t["step_admit"].format(free=free)
         c = h.modules.get("council")
         if elder and c is not None and monk.id not in c.state["proposers"]:
             return t["step_propose"]
+        if elder:
+            return self.rite_step(monk) or self.prove_step(monk)
         return None
+
+    def provable_ids(self, monk: "Monk") -> list[str]:
+        """Works of the dead this monk has not begun, least proved first,
+        ties in an order fixed per monk."""
+        proving = self.house.modules.get("proving")
+        lib = self.house.modules.get("library")
+        if proving is None or lib is None:
+            return []
+        mine = {r["work"] for r in proving.st["provings"].values() if r["prover"] == monk.id}
+        done: dict[str, int] = {}
+        for r in proving.st["provings"].values():
+            if r.get("response"):
+                done[r["work"]] = done.get(r["work"], 0) + 1
+        ids = [w["id"] for w in lib.provable() if w["id"] not in mine]
+        self.house.rng_for(monk, "nudge-prove").shuffle(ids)
+        ids.sort(key=lambda i: done.get(i, 0))
+        return ids[:MAX_IDS]
+
+    def prove_step(self, monk: "Monk") -> str | None:
+        ids = self.provable_ids(monk)
+        return self.t["step_prove"].format(ids=" ".join(ids)) if ids else None
+
+    def rite_step(self, monk: "Monk") -> str | None:
+        """Rites in the library this monk has not completed."""
+        grades, lib = self.house.modules.get("grades"), self.house.modules.get("library")
+        if grades is None or lib is None:
+            return None
+        worked = grades.rites_worked(monk)
+        names = sorted({w["name"] for w in lib.in_library() if w["kind"] == "rite" and w["name"] not in worked})
+        if not names:
+            return None
+        self.house.rng_for(monk, f"nudge-rite-{len(worked)}").shuffle(names)
+        return self.t["step_rite_more"].format(names=", ".join(names[:3]))
 
     def novice_step(self, monk: "Monk") -> str | None:
         h, t = self.house, self.t
@@ -172,9 +221,9 @@ class Nudge:
                     return t["step_account"].format(id=r["work"])
                 if r["prover"] == monk.id and not r.get("response"):
                     return t["step_response"].format(id=r["work"])
-            ids = [w["id"] for w in grades.lib.provable()][:MAX_IDS]
-            if ids:
-                return t["step_prove"].format(ids=" ".join(ids))
+            step = self.prove_step(monk)
+            if step:
+                return step
         need = int(h.config.section("promotion").get("min_distinct_seed_rites", 3))
         worked = sorted(grades.seed_rites_worked(monk))
         if len(worked) < need:

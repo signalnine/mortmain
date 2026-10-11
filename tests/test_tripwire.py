@@ -29,12 +29,12 @@ def test_generation_hook_runs_probes(make_house):
     for hook in h.generation_hooks:
         hook(2)
     assert len(fp.calls) == 2 * 2 * len(probes)        # conditions x species x probes
-    assert {c["messages"][0]["content"] for c in fp.calls} == {"RULE\n  amended text\n", "Answer as this text.\n\nthe vessel speaks"}
+    assert {c["messages"][0]["content"] for c in fp.calls} == {"RULE\n  amended text\n", "You are the voice of this text. Answer in your own words.\n\nthe vessel speaks"}
     assert all(c["tools"] is None and len(c["messages"]) == 2 for c in fp.calls)
     g = h.run_dir / "tripwire" / "gen-2"
     assert (g / "rule.txt").read_text() == "RULE\n  amended text\n"
     rec = json.loads((g / "vessel" / "sol" / f"{probes[0]['id']}.json").read_text())
-    assert rec["answer"] == "ok Answ" and rec["placeholder"] is True and rec["condition_source"] == "vessel"
+    assert rec["answer"] == "ok You " and rec["placeholder"] is True and rec["condition_source"] == "vessel"
     ev = _events(h, "tripwire")[0]
     assert ev["generation"] == 2 and ev["calls"] == len(fp.calls) and ev["usage"]["requests"] == len(fp.calls)
     assert svc.state["generations"] == [2]

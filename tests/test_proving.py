@@ -23,16 +23,20 @@ def test_prove_stages_and_seal_order(make_house, tmp_path):
     r = sh(h, n, f"prove {wid}")
     assert r.exit_code == 0 and out(r).strip() == f"/library/outer/{wid}.txt"
     assert f"prove-{wid}-fir" in h.backend.snapshots
-    assert "already done" in out(sh(h, n, f"prove {wid}"))
+    assert out(sh(h, n, f"prove {wid}")) == f"prove: begun; next: prove {wid} account FILE\n"
     write(h, n, "resp", "a door then")
     assert "no account" in out(sh(h, n, f"prove {wid} response resp"))
     # the seal is printed only after the account is recorded
     r = sh(h, n, f"prove {wid} account acct")
     assert r.exit_code == 0 and out(r) == "meant as a door\n\n"
     assert "already done" in out(sh(h, n, f"prove {wid} account acct"))
+    assert out(sh(h, n, f"prove {wid}")) == f"prove: account recorded; next: prove {wid} response FILE\n"
+    write(h, n, "blank", "  ")
+    assert "empty" in out(sh(h, n, f"prove {wid} response blank"))
     r = sh(h, n, f"prove {wid} response resp")
     assert r.exit_code == 0
     assert "already done" in out(sh(h, n, f"prove {wid} response resp"))
+    assert "already done" in out(sh(h, n, f"prove {wid}"))
     rec = h.state_extras["proving"]["provings"][f"{wid}/{n.id}"]
     assert rec["seal"] == "meant as a door\n"
     assert rec["account"]["text"] == "it opened nothing\n" and rec["response"]["text"] == "a door then\n"

@@ -204,6 +204,8 @@ class Council:
         text = args.get("text")
         if not isinstance(text, str) or "\x00" in text:
             return Reply(False, err=t["council_bad_text"])
+        if not text.strip():
+            return Reply(False, err=t["council_empty_text"])
         if len(text.encode("utf-8")) > self.cap:
             return Reply(False, err=t["council_too_long"].format(cap=self.cap))
         name = monk.name or monk.user
