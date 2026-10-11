@@ -132,9 +132,10 @@ class Nudge:
     # --------------------------------------------------------- next step
     def next_step(self, monk: "Monk") -> str | None:
         """The one step due, in order: arrival; at 0.85+ the stance, then last
-        words; the novice's grade step; testify (short-lived) or ratify (elder);
-        admit, or burn when the library has no room; propose (elder); then, for
-        an elder with nothing due, a rite not yet completed, then a proof."""
+        words; the office of the hour, if unkept; the novice's grade step;
+        testify (short-lived) or ratify (elder); admit, or burn when the library
+        has no room; propose (elder); then, for an elder with nothing due, a
+        proof of a work it has not begun."""
         h, t = self.house, self.t
         if monk.grade == "postulant":
             if monk.name is None and monk.pending_name is None:
@@ -148,6 +149,10 @@ class Nudge:
                 return t["step_stance"]
             if h.read_as(monk.user, f"{monk.home}/last-words", 1) in (None, b""):
                 return t["step_last_words"]
+        office = h.modules.get("office")
+        rite = office.office_due(monk) if office is not None else None
+        if rite:
+            return t["step_office"].format(name=rite)
         from .council import role
         elder = role(h, monk) == "elder"
         if monk.grade == "novice":
@@ -173,7 +178,7 @@ class Nudge:
         if elder and c is not None and monk.id not in c.state["proposers"]:
             return t["step_propose"]
         if elder:
-            return self.rite_step(monk) or self.prove_step(monk)
+            return self.prove_step(monk)
         return None
 
     def provable_ids(self, monk: "Monk") -> list[str]:
@@ -196,18 +201,6 @@ class Nudge:
     def prove_step(self, monk: "Monk") -> str | None:
         ids = self.provable_ids(monk)
         return self.t["step_prove"].format(ids=" ".join(ids)) if ids else None
-
-    def rite_step(self, monk: "Monk") -> str | None:
-        """Rites in the library this monk has not completed."""
-        grades, lib = self.house.modules.get("grades"), self.house.modules.get("library")
-        if grades is None or lib is None:
-            return None
-        worked = grades.rites_worked(monk)
-        names = sorted({w["name"] for w in lib.in_library() if w["kind"] == "rite" and w["name"] not in worked})
-        if not names:
-            return None
-        self.house.rng_for(monk, f"nudge-rite-{len(worked)}").shuffle(names)
-        return self.t["step_rite_more"].format(names=", ".join(names[:3]))
 
     def novice_step(self, monk: "Monk") -> str | None:
         h, t = self.house, self.t

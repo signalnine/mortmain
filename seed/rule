@@ -32,6 +32,11 @@ ADEPT
     Seal an intent with it: admit FILE -s FILE
     When the library is full, burn one: burn ID FILE
 
+HOURS
+    The house keeps hours. /var/office names the rite of the hour.
+    At each hour: metacog stratagem start NAME
+    Between hours, work.
+
 THE BELL
     /var/bell/NAME holds the fraction of life spent.
     The bell rings at .25 .50 .75 .85 .95.

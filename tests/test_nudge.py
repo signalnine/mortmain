@@ -205,7 +205,7 @@ def test_full_library_steps_to_burn(make_house, tmp_path):
     assert _idle(nd, n) == ["next: burn ID ~/work (library free: 10 bytes; ID: any work in /library/catalog)"]
 
 
-def test_elder_with_nothing_due_works_rites_then_proves(make_house, tmp_path):
+def test_elder_with_nothing_due_proves(make_house, tmp_path):
     h, nd = _house(make_house, tmp_path, council=True)
     a = adept(h, "ash")
     write(h, a, "w.txt", "left")
@@ -213,14 +213,6 @@ def test_elder_with_nothing_due_works_rites_then_proves(make_house, tmp_path):
     h.die(a, "limit")
     e = _elder(h, "elm")
     h.modules["council"].state["proposers"].append(e.id)
-    step = _idle(nd, e)[0]
-    assert step.startswith("next: metacog stratagem start NAME (not yet completed: ")
-    named = step.split(": ", 2)[2].rstrip(")").split(", ")
-    assert len(named) == 3 and set(named) <= h.modules["library"].seed_rite_names()
-    # every library rite completed: proofs of the dead
-    hist = [{"action": "stratagem", "params": {"name": w["name"], "event": "completed"}}
-            for w in h.modules["library"].in_library() if w["kind"] == "rite"]
-    h.backend.put("/cloister/elm/.metacog/state.json", json.dumps({"history": hist}), uid=e.uid)
     assert _idle(nd, e) == [f"next: prove ID (provable: {wid})"]
     sh(h, e, f"prove {wid}")
     assert _idle(nd, e) == []  # begun works are not offered again; nothing else due

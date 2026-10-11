@@ -33,6 +33,11 @@ ARCHIVE_CAP = 8 << 20
 
 def completed_rites(state_json: bytes | None, archive_jsonl: bytes | None) -> set[str]:
     """Names of stratagems the metacog history records as completed."""
+    return set(completed_entries(state_json, archive_jsonl))
+
+
+def completed_entries(state_json: bytes | None, archive_jsonl: bytes | None) -> list[str]:
+    """One name per completion the metacog history records, repeats kept."""
     entries: list = []
     if state_json:
         try:
@@ -47,13 +52,13 @@ def completed_rites(state_json: bytes | None, archive_jsonl: bytes | None) -> se
                 entries.append(json.loads(line))
             except ValueError:
                 continue
-    out = set()
+    out = []
     for e in entries:
         if not isinstance(e, dict) or e.get("action") != "stratagem":
             continue
         p = e.get("params")
         if isinstance(p, dict) and p.get("event") == "completed" and isinstance(p.get("name"), str):
-            out.add(p["name"])
+            out.append(p["name"])
     return out
 
 

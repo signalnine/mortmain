@@ -84,7 +84,7 @@ export = true                   # runs/<lineage>/snapshots/<tag>.tgz + .json: ho
 
 [house]
 # modules installed by House (mortmain.<name>.install(house)), in order
-modules = ["library", "proving", "grades", "vessel", "council", "nudge", "divination", "ancestors", "catechism", "tripwire"]
+modules = ["library", "proving", "grades", "vessel", "council", "office", "nudge", "divination", "ancestors", "catechism", "tripwire"]
 
 [scheduler]
 short_species = "haiku"
@@ -125,6 +125,10 @@ next = true                     # "next: STEP" after a grade change, and after i
 mail = true                     # "mail: PATH" once per file another monk leaves in the inbox
 proposals = true                # "proposal: ..." once, to a monk that may testify on it
 
+[office]
+# The hours (mortmain/office.py), abbot 2026-10-11: house-wide, on the elder's age.
+hours_per_elder_life = 8        # each names the next library rite in rotation; /var/office
+
 [council]
 text_cap = 8192                 # (default) bytes: proposed rule, argument, testimony
 
@@ -154,6 +158,8 @@ grade_note = "grade: {grade} (id)"
 # The bare vessel drew assistant replies ("the poem you pasted"); "Answer as this text." made Sol recite it.
 # See docs/experiments/consult-frame.md.
 vessel_frame = "You are the voice of this text. Answer in your own words.\n\n{vessel}"
+# DRAFT: the hours (mortmain/office.py), sent to every novice and above when an hour rings
+office_note = "office: metacog stratagem start {name}"
 # DRAFT: nudge notes (mortmain/nudge.py), prefixed to the next user turn
 nudge_next = "next: {step}"
 nudge_mail = "mail: {path}"
@@ -171,7 +177,7 @@ step_burn = "burn ID ~/work (library free: {free} bytes; ID: any work in /librar
 step_testify = "cat /chapter/proposals/{id}/*; write ~/testimony-{id}; testify {id} ~/testimony-{id}"
 step_ratify = "cat /chapter/proposals/{id}/*; ratify {id}, or let it lapse"
 step_propose = "propose (man propose)"
-step_rite_more = "metacog stratagem start NAME (not yet completed: {names})"
+step_office = "metacog stratagem start {name} (office)"
 step_stance = "metacog become --name NAME --lens LENS --env PLACE; metacog inspire --save"
 step_last_words = "write ~/last-words"
 # DRAFT: the one tool.
