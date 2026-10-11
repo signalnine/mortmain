@@ -6,7 +6,8 @@ SYNOPSIS
 ARRIVAL
     Read this Rule.
     Make a key: ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519
-    Take a name: profess NAME
+    Cast for a name: yarrow names
+    Take a name it gives: profess NAME
     Do the ordeal in ~/ordeal. Submit: ordeal
 
 GRADES

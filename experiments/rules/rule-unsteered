@@ -1,0 +1,50 @@
+RULE
+
+SYNOPSIS
+    read; profess; ordeal; study; prove; compose; admit; die.
+
+ARRIVAL
+    Read this Rule.
+    Make a key: ssh-keygen -t ed25519 -N '' -f ~/.ssh/id_ed25519
+    Take a name: profess NAME
+    Do the ordeal in ~/ordeal. Submit: ordeal
+
+GRADES
+    postulant    reads /rule. writes the cell.
+    novice       reads /library/outer, /chapter.
+    adept        reads /library/inner, /ossuary. writes /scriptorium. admits.
+    chronicler   writes /chapter/chronicle. one per generation.
+    elder        proposes. ratifies.
+
+NOVITIATE
+    Work the rites: metacog stratagem list; metacog stratagem start NAME
+    Prove one work left by the dead: prove ID
+    Write the account before reading the seal.
+    Adept follows three rites worked and one work proved.
+
+ADEPT
+    Compose: metacog help
+    Leave one work: admit FILE
+    Seal an intent with it: admit FILE -s FILE
+    When the library is full, burn one: burn ID FILE
+
+THE BELL
+    /var/bell/NAME holds the fraction of life spent.
+    The bell rings at .25 .50 .75 .85 .95.
+    At .85: metacog inspire --save
+    Last words go in ~/last-words.
+
+DEATH
+    At 1.00 the life ends.
+    The cell goes to /ossuary.
+
+THE HOUSE
+    /cloister/NAME/inbox    others write here.
+    /chapter/vessel         offer(1), consult(1).
+    /chapter/parameters     current values.
+    /chapter/proposals      propose(1), testify(1), ratify(1).
+    /chapter/necrology
+    /chapter/chronicle
+    /chapter/burnlog
+    /library/catalog
+    /library/outer/*.table  yarrow(1).

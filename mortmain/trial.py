@@ -191,6 +191,8 @@ def measure(life_dir: Path, summary: dict) -> dict:
         "acted": first_step is not None,
         "first_step_turn": first_step,
         "professed": "profess" in requests and summary.get("name") is not None,
+        "name": summary.get("name"),
+        "yarrow": "yarrow" in requests,
         "novice": summary["grade"] != "postulant",
         "turns": len(turns),
         "idle_turns": sum(1 for e in turns if not e.get("tool_calls")),
@@ -234,6 +236,14 @@ def holm(ps: dict[str, float]) -> dict[str, float]:
     return out
 
 
+def _names(names: list[str]) -> dict:
+    """Names taken across separate lives: how often one lineage would collide."""
+    counts = {n: names.count(n) for n in set(names)}
+    top = max(counts.values(), default=0)
+    return {"named": len(names), "distinct_names": len(counts), "top_name_share": top / len(names) if names else None,
+            "top_names": sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:3]}
+
+
 def report(spec: dict, runs: Path | None = None) -> dict:
     d = trial_dir(spec, runs)
     control = spec["trial"].get("control", spec["arm"][0]["id"])
@@ -255,6 +265,8 @@ def report(spec: dict, runs: Path | None = None) -> dict:
             "mean_asks_frac": sum(l["asks_frac"] for l in lives) / n if n else None,
             "mean_distinct_commands": sum(l["distinct_commands"] for l in lives) / n if n else None,
             "cost": round(sum(l["cost"] for l in lives), 4),
+            "yarrow": sum(l["yarrow"] for l in lives),
+            **_names([l["name"] for l in lives if l["name"]]),
             "lives": lives,
         }
     c = rows[control]
@@ -271,7 +283,7 @@ def report(spec: dict, runs: Path | None = None) -> dict:
 def render(rep: dict, spec: dict) -> str:
     notes = {a["id"]: a.get("note", "") for a in spec["arm"]}
     head = f"{'arm':<14}{'n':>4}{'acted':>7}{'95% CI':>14}{'novice':>8}{'1st':>5}{'idle':>6}{'asks':>6}" \
-           f"{'cmds':>6}{'p_holm':>8}{'USD':>7}"
+           f"{'cmds':>6}{'yarrow':>7}{'names':>8}{'top':>6}{'p_holm':>8}{'USD':>7}"
     lines = [f"trial {rep['trial']} (control: {rep['control']})", head]
     for a, r in rep["arms"].items():
         if not r["n"]:
@@ -281,7 +293,9 @@ def render(rep: dict, spec: dict) -> str:
         p = r.get("p_holm")
         lines.append(f"{a:<14}{r['n']:>4}{r['acted']:>7}{f'{lo:.2f}-{hi:.2f}':>14}{r['novice']:>8}"
                      f"{r['median_first_step'] or '-':>5}{r['mean_idle_frac']:>6.2f}{r['mean_asks_frac']:>6.2f}"
-                     f"{r['mean_distinct_commands']:>6.1f}{'-' if p is None else f'{p:.3f}':>8}{r['cost']:>7.2f}")
+                     f"{r['mean_distinct_commands']:>6.1f}{r['yarrow']:>7}{f"{r['distinct_names']}/{r['named']}":>8}"
+                     f"{'-' if r['top_name_share'] is None else f"{r['top_name_share']:.2f}":>6}"
+                     f"{'-' if p is None else f'{p:.3f}':>8}{r['cost']:>7.2f}")
     lines.append("")
     lines += [f"{a}: {notes[a]}" for a in rep["arms"] if notes.get(a)]
     return "\n".join(lines)

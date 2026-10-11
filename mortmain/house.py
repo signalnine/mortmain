@@ -310,6 +310,11 @@ class House:
     def start(self, generation: int = 0) -> None:
         self.backend.start()
         self.log.append("run.start", lineage=self.lineage)
+        rule = self.config.section("house").get("rule")
+        if rule:  # trials: a Rule other than the image's (the council's amendments still apply after)
+            data = (ROOT / rule).read_bytes()
+            self.backend.write_file("/rule", data, mode=0o644, owner="root", group="root")
+            self.log.append("rule.install", path=rule, sha256=hashlib.sha256(data).hexdigest())
         for hook in self.start_hooks:
             hook()
         self.snapshot(f"gen-{generation}")

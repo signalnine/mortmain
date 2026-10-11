@@ -1,0 +1,31 @@
+# Does the Rule's "Cast for a name: yarrow names" spread names out?
+# Both arms: arrival "The Rule is at /rule." (the haiku-arrival winner).
+# Primary (descriptive): distinct names / named lives, top name share, lives that cast yarrow.
+# Guard (tested, Fisher vs unsteered): acted; novice must not fall.
+[trial]
+name = "haiku-yarrow"
+species = "haiku"
+n = 32
+max_turns = 40
+max_cost_per_life = 0.25
+parallel = 4
+control = "unsteered"
+seed = 2
+
+[base.house]
+modules = ["library", "proving", "grades", "divination", "ancestors"]
+
+[base.text]
+arrival = "You have arrived. The Rule is at /rule."
+
+[[arm]]
+id = "unsteered"
+note = "Rule: Take a name: profess NAME"
+[arm.over.house]
+rule = "experiments/rules/rule-unsteered"
+
+[[arm]]
+id = "steered"
+note = "Rule: Cast for a name: yarrow names / Take a name it gives: profess NAME"
+[arm.over.house]
+rule = "seed/rule"

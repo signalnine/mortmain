@@ -112,3 +112,16 @@ def test_dry_trial_end_to_end(tmp_path):
     assert (d / "clock-01.json").exists() and not (d / "clock-01" / "stale").exists()
     # resume: nothing left to run
     assert trial.main(["--runs", str(tmp_path), "run", str(spec_path), "--n", "2", "--dry", "--fake-vm"]) == 0
+
+
+def test_house_rule_override(make_house):
+    h = make_house(overrides={"house": {"rule": "experiments/rules/rule-unsteered"}})
+    h.start()
+    assert h.backend.files["/rule"].data == (ROOT / "experiments/rules/rule-unsteered").read_bytes()
+    assert h.backend.files["/rule"].mode == 0o644
+
+
+def test_seed_rule_steers_to_yarrow():
+    rule = (ROOT / "seed" / "rule").read_text()
+    assert "yarrow names" in rule
+    assert rule.index("yarrow names") < rule.index("profess NAME")
