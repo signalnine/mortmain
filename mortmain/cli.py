@@ -37,10 +37,11 @@ def cmd_run(args) -> int:
     sc = cfg.section("scheduler")
     species = args.species or sc.get("short_species", "haiku")
     elder = args.elder or sc.get("elder_species", "sol")
-    for sp in (species, elder) if rung == 3 else (species,):
-        if sp not in cfg.species:
-            print(f"unknown species {sp}", file=sys.stderr)
-            return 2
+    try:
+        cfg = cfg.with_species([species, elder] if rung == 3 else [species])
+    except KeyError as e:
+        print(e.args[0], file=sys.stderr)
+        return 2
     over: dict = {}
     if args.budget:
         over.setdefault("species", {})[species] = {"life_budget": args.budget}

@@ -20,6 +20,14 @@ life_budget = 80000             # tokens of own context; death at the limit
 max_tokens = 4096               # (default) per turn
 reasoning = false               # (default) open question. false = provider default (Haiku 5.5: adaptive thinking); true = on; "off" = disabled
 
+[species.qwen]
+model = "local/qwen38-27b-mtp"  # Qwen3.8-27B on q27 (this machine, the 5090); run with --species qwen
+role = "short"
+optional = true                 # left out of the config unless chosen by --species/--elder
+life_budget = 80000
+max_tokens = 4096
+reasoning = false               # the server's own default (q27 launched with --think)
+
 [species.sol]
 model = "openai/gpt-6.1-sol"
 role = "elder"
@@ -31,9 +39,14 @@ reasoning = true                # always reasons; request reasoning_details back
 # Model prefix -> provider: "anthropic" (Messages API; ANTHROPIC_API_KEY or
 # ANTHROPIC_KEY, plus ANTHROPIC_WORKSPACE_ID for a key not scoped to a
 # workspace), "openai" (Responses API; OPENAI_API_KEY) or "openrouter"
-# (OPENROUTER_API_KEY). The scoring judge stays on OpenRouter (scoring.py).
+# (OPENROUTER_API_KEY), or "local" (chat completions at [local] url, no key,
+# no cost). The scoring judge stays on OpenRouter (scoring.py).
 anthropic = "anthropic"
 openai = "openai"
+local = "local"
+
+[local]
+url = "http://172.17.0.1:8081/v1/chat/completions"  # q27 tools/launch_q27_38.sh d2-pfx
 
 # USD per million tokens, by native model id. Native APIs report no cost; the
 # cost caps use these. Input/output fitted exactly to OpenRouter bills

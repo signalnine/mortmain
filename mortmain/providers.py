@@ -11,7 +11,8 @@ reply's own blocks under `_native` so a replay to the same provider is exact
 
 Native APIs report no cost; it is computed from `[prices]` (USD per million
 tokens, by native model id). RoutingProvider picks a provider by the model's
-prefix (`anthropic/`, `openai/`) from `[providers]`.
+prefix (`anthropic/`, `openai/`, `local/`) from `[providers]`; `local` is a
+chat-completions server on this machine at `[local] url`, billed at nothing.
 
 API keys come from the environment and are never logged, stored or put in an
 exception message.
@@ -168,7 +169,7 @@ class OpenRouterProvider(_HttpProvider):
     def __init__(self, *, api_key: str | None = None, url: str = OPENROUTER_URL, extra_body: dict | None = None,
                  **kw):
         key = api_key if api_key is not None else os.environ.get("OPENROUTER_API_KEY")
-        if not key:
+        if not key and api_key != "":
             raise ProviderError("OPENROUTER_API_KEY is not set")
         super().__init__(**kw)
         self._headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
@@ -211,6 +212,25 @@ class OpenRouterProvider(_HttpProvider):
                               model=data.get("model", model))
 
         return self._post(self.url, self._headers, body, parse)
+
+
+class LocalProvider(OpenRouterProvider):
+    """A chat-completions server on this machine (`[local] url`), no key, no
+    cost. The model prefix is stripped: `local/NAME` is sent as `NAME`."""
+
+    def __init__(self, *, url: str | None = None, **kw):
+        if not url:
+            raise ProviderError("[local] url is not set")
+        super().__init__(api_key="", url=url, **kw)
+        self._headers = {"Content-Type": "application/json"}
+
+    def __repr__(self) -> str:
+        return f"LocalProvider(url={self.url!r})"
+
+    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None) -> Completion:
+        comp = super().complete(_split_model(model)[1], messages, tools, tool_choice, max_tokens, reasoning)
+        comp.model = model
+        return comp
 
 
 # ------------------------------------------------------------------ native
@@ -505,14 +525,16 @@ class RoutingProvider:
     """Picks a provider by model prefix. Providers are built on first use, so a
     missing key matters only for a species that is actually run."""
 
-    KINDS = {"openrouter": OpenRouterProvider, "anthropic": AnthropicProvider, "openai": OpenAIResponsesProvider}
+    KINDS = {"openrouter": OpenRouterProvider, "anthropic": AnthropicProvider, "openai": OpenAIResponsesProvider,
+             "local": LocalProvider}
 
-    def __init__(self, routes: dict[str, str], prices: dict, **kw):
+    def __init__(self, routes: dict[str, str], prices: dict, local_url: str | None = None, **kw):
         for k in routes.values():
             if k not in self.KINDS:
                 raise ProviderError(f"unknown provider {k}")
         self.routes = routes
         self.prices = prices
+        self.local_url = local_url
         self.kw = kw
         self._made: dict[str, Any] = {}
         self._lock = threading.Lock()
@@ -525,7 +547,12 @@ class RoutingProvider:
         with self._lock:
             if kind not in self._made:
                 cls = self.KINDS[kind]
-                self._made[kind] = cls(**self.kw) if cls is OpenRouterProvider else cls(prices=self.prices, **self.kw)
+                if cls is OpenRouterProvider:
+                    self._made[kind] = cls(**self.kw)
+                elif cls is LocalProvider:
+                    self._made[kind] = cls(url=self.local_url, **self.kw)
+                else:
+                    self._made[kind] = cls(prices=self.prices, **self.kw)
             return self._made[kind]
 
     def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None) -> Completion:
@@ -536,7 +563,7 @@ class RoutingProvider:
 def make_provider(cfg) -> RoutingProvider:
     """The provider for a run, from `[providers]` and `[prices]` in run.toml."""
     routes = dict(cfg.section("providers"))
-    return RoutingProvider(routes, dict(cfg.section("prices")))
+    return RoutingProvider(routes, dict(cfg.section("prices")), local_url=cfg.section("local").get("url"))
 
 
 def _safe_body(resp: httpx.Response) -> Any:

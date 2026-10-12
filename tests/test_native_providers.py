@@ -187,7 +187,7 @@ def test_routing_by_prefix_and_lazy(monkeypatch):
         monkeypatch.delenv(v, raising=False)
     monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or")
     r = make_provider(config_mod.load())
-    assert r.routes == {"anthropic": "anthropic", "openai": "openai"}
+    assert r.routes == {"anthropic": "anthropic", "openai": "openai", "local": "local"}
     with pytest.raises(ProviderError, match="ANTHROPIC"):   # built on first use only
         r.provider_for("anthropic/claude-haiku-5.5")
     assert isinstance(r.provider_for("meta/x"), OpenRouterProvider)
@@ -232,3 +232,33 @@ def test_reasoning_config_values():
         assert c.species["haiku"].reasoning_param() == want
     with pytest.raises(ValueError):
         cfg.with_overrides({"species": {"haiku": {"reasoning": "maybe"}}})
+
+
+def test_local_provider_strips_prefix_sends_no_key():
+    from mortmain.providers import LocalProvider
+    seen = []
+
+    def handler(req):
+        seen.append((str(req.url), dict(req.headers), json.loads(req.content)))
+        return httpx.Response(200, json={"model": "m", "choices": [{"message": {"role": "assistant", "content": "hi"}}],
+                                         "usage": {"prompt_tokens": 3, "completion_tokens": 1}})
+
+    r = RoutingProvider({"local": "local"}, {}, local_url="http://127.0.0.1:9/v1/chat/completions",
+                        transport=httpx.MockTransport(handler), sleep=lambda s: None)
+    assert isinstance(r.provider_for("local/m"), LocalProvider)
+    c = r.complete("local/m", [{"role": "user", "content": "x"}])
+    url, headers, body = seen[0]
+    assert url == "http://127.0.0.1:9/v1/chat/completions" and body["model"] == "m"
+    assert "authorization" not in headers
+    assert c.model == "local/m" and c.usage == {"prompt_tokens": 3, "completion_tokens": 1}
+    with pytest.raises(ProviderError):
+        RoutingProvider({"local": "local"}, {}).provider_for("local/m")
+
+
+def test_optional_species_only_when_chosen():
+    cfg = config_mod.load()
+    assert "qwen" not in cfg.species and set(cfg.species) == {"haiku", "sol"}
+    run = cfg.with_species(["qwen", "sol"])
+    assert set(run.species) == {"qwen", "sol"} and run.species["qwen"].model.startswith("local/")
+    with pytest.raises(KeyError):
+        cfg.with_species(["nope"])

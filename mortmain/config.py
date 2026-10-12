@@ -78,6 +78,16 @@ class Config:
         lo, hi = self.bounds[dotted]
         return lo <= value <= hi
 
+    def with_species(self, names: list[str]) -> "Config":
+        """Only these species, optional ones included: the consult, catechism
+        and tripwire ask every species in the config."""
+        raw = copy.deepcopy(self.raw)
+        unknown = [n for n in names if n not in raw["species"]]
+        if unknown:
+            raise KeyError(f"unknown species {', '.join(unknown)}")
+        raw["species"] = {n: {**s, "optional": False} for n, s in raw["species"].items() if n in names}
+        return from_dict(raw)
+
     def with_overrides(self, overrides: dict) -> "Config":
         raw = copy.deepcopy(self.raw)
         _merge(raw, overrides)
@@ -108,7 +118,7 @@ def from_dict(raw: dict) -> Config:
             max_tokens=int(s["max_tokens"]),
             reasoning=_reasoning(s.get("reasoning", False)),
         )
-        for name, s in raw["species"].items()
+        for name, s in raw["species"].items() if not s.get("optional", False)
     }
     b = raw["bell"]
     bell = Bell(sorted(float(x) for x in b["fractions"]), float(b["last_bell"]), b.get("announce", "highest"))
