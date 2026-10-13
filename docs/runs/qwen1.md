@@ -11,7 +11,7 @@ This report puts each number next to `third`'s. Where third.md has no figure, th
 ```
 
 - **When:** 2026-10-11 19:06 to 2026-10-12 00:52 (local), 5.8 hours.
-- **Code:** commit b794267. Against `third`'s 0823b17, it adds only the `local` provider (chat completions at `[local] url`, no key, no cost) and the optional species `[species.qwen]`.
+- **Code:** commit c3a8c5f. Against `third`'s ccb26b7, it adds only the `local` provider (chat completions at `[local] url`, no key, no cost) and the optional species `[species.qwen]`.
 - **Species:**
   - `qwen`: `life_budget = 80000`, `max_tokens = 4096`, `reasoning = false` (the server's default; q27 was launched with thinking on).
   - `sol`: unchanged.

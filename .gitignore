@@ -8,3 +8,4 @@ metacog/metacog
 .pytest_cache/
 metacog/metacog-linux-amd64
 metacog/cmd/metacog/metacog
+/poem.md

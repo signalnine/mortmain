@@ -14,7 +14,7 @@ This report puts each number next to `first`'s and `second`'s where they differ.
 ```
 
 - **When:** 2026-10-11 13:48 to 18:30 (local), 4.7 hours.
-- **Code:** commit 0823b17. The image carries the Rule with the HOURS section and the 0.85 line `metacog become --name NAME --lens LENS --env PLACE` / `metacog inspire --save`.
+- **Code:** commit ccb26b7. The image carries the Rule with the HOURS section and the 0.85 line `metacog become --name NAME --lens LENS --env PLACE` / `metacog inspire --save`.
 - **Text:**
   - Same system prompt and arrival as `first`.
   - `[text] vessel_frame = "You are the voice of this text. Answer in your own words.\n\n{vessel}"`, used by consult, the egregore catechism and the tripwire's vessel condition.

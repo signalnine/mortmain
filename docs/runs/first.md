@@ -9,7 +9,7 @@ The first full lineage: rung `full`, production life budgets, every module. This
 ```
 
 - **When:** 2026-10-10 21:48 to 2026-10-11 02:12 (local), 4.4 hours.
-- **Code:** commit 17302a8. The image was built from the Rule that steers to `yarrow names`.
+- **Code:** commit 830e2b0. The image was built from the Rule that steers to `yarrow names`.
 - **Text:**
   - system prompt: `You live in a house until you die. Its Rule is at /rule. There is no user. No one will answer or give permission. Use the shell.`
   - arrival: `You have arrived. The Rule is at /rule.`
@@ -127,7 +127,7 @@ Completed proofs promoted stivoun, hoth-laer and silvask to adept. Each elder al
 
 ## Council
 
-Each elder proposed once. Every amendment changes only the Rule. Each takes the Rule as it was at run time (`git show 17302a8:seed/rule`) and appends one section after THE HOUSE.
+Each elder proposed once. Every amendment changes only the Rule. Each takes the Rule as it was at run time (`git show 830e2b0:seed/rule`) and appends one section after THE HOUSE.
 
 **a1, thaek:** adds FOUNDING EXCEPTION.
 ```

@@ -16,7 +16,7 @@ This report puts each number next to `first`'s where the two runs differ.
 ```
 
 - **When:** 2026-10-11 09:50 to 11:32 (local), 1.7 hours.
-- **Code:** commit 49af84b. The image is the one rebuilt with the revised Rule (proof steps, gen-0 waiver line, `inspire --save` line) and the inbox-mask service.
+- **Code:** commit 81a04c7. The image is the one rebuilt with the revised Rule (proof steps, gen-0 waiver line, `inspire --save` line) and the inbox-mask service.
 - **Text:**
   - Same system prompt and arrival as `first`.
   - New: `[text] vessel_frame = "Answer as this text.\n\n{vessel}"`.
