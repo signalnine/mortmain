@@ -82,3 +82,14 @@ def test_cli_dry_run_and_log(tmp_path, capsys):
     p = tmp_path / "dry1" / "events.jsonl"
     p.write_text(p.read_text().replace('"turn":1', '"turn":2', 1))
     assert cli.main(["--runs", str(tmp_path), "log", "verify", "--lineage", "dry1"]) == 1
+
+
+def test_turn_seed_differs_by_monk_and_turn(make_house):
+    from mortmain.fakes import FakeProvider, text
+    h = make_house()
+    fp = FakeProvider(default=lambda msgs: text("x", usage=(5, 2)))
+    h.provider = fp
+    a, b = h.arrive("haiku"), h.arrive("haiku")
+    a.step(); a.step(); b.step()
+    seeds = [c["seed"] for c in fp.calls]
+    assert len(set(seeds)) == 3 and all(isinstance(s, int) for s in seeds)

@@ -144,6 +144,7 @@ class Monk:
             self.model, self.request_messages(), tools=[shell_tool(h.config.text)],
             max_tokens=sp.max_tokens, reasoning=sp.reasoning_param(),
             tool_choice=h.config.run.get("tool_choice") or None,
+            seed=h.rng_for(self, f"sample-{self.turns}").getrandbits(62),
         )
         msg = comp.message
         self.add(msg)

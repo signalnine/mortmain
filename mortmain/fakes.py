@@ -68,9 +68,10 @@ class FakeProvider:
         self.calls: list[dict] = []
         self.model_suffix = model_suffix
 
-    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None) -> Completion:
+    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None,
+                 seed=None) -> Completion:
         self.calls.append({"model": model, "messages": copy.deepcopy(messages), "tools": tools,
-                           "tool_choice": tool_choice, "max_tokens": max_tokens, "reasoning": reasoning})
+                           "tool_choice": tool_choice, "max_tokens": max_tokens, "reasoning": reasoning, "seed": seed})
         if self.script:
             item = self.script.pop(0)
         elif self.default is not None:

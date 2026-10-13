@@ -31,6 +31,7 @@ from typing import Any, Callable, Protocol
 import httpx
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
+_SEEDS = random.SystemRandom()
 RETRY_STATUS = {408, 409, 425, 429, 500, 502, 503, 504, 520, 522, 524, 529}
 
 
@@ -81,6 +82,7 @@ class Provider(Protocol):
         tool_choice: Any = None,
         max_tokens: int | None = None,
         reasoning: dict | None = None,
+        seed: int | None = None,
     ) -> Completion: ...
 
 
@@ -166,6 +168,7 @@ class _HttpProvider:
 
 
 class OpenRouterProvider(_HttpProvider):
+    send_seed = False
     def __init__(self, *, api_key: str | None = None, url: str = OPENROUTER_URL, extra_body: dict | None = None,
                  **kw):
         key = api_key if api_key is not None else os.environ.get("OPENROUTER_API_KEY")
@@ -192,8 +195,11 @@ class OpenRouterProvider(_HttpProvider):
         body.update(self.extra_body)
         return body
 
-    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None) -> Completion:
+    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None,
+                 seed=None) -> Completion:
         body = self.build_body(model, messages, tools, tool_choice, max_tokens, reasoning)
+        if self.send_seed:
+            body["seed"] = seed if seed is not None else _SEEDS.getrandbits(62)
 
         def parse(data, status):
             err = data.get("error") if isinstance(data, dict) else None
@@ -216,7 +222,14 @@ class OpenRouterProvider(_HttpProvider):
 
 class LocalProvider(OpenRouterProvider):
     """A chat-completions server on this machine (`[local] url`), no key, no
-    cost. The model prefix is stripped: `local/NAME` is sent as `NAME`."""
+    cost. The model prefix is stripped: `local/NAME` is sent as `NAME`.
+
+    Every request carries a `seed`: q27 samples with seed 0 when none is sent,
+    so the same prompt gave the same output (lineage qwen1: identical first
+    turns for every monk). The caller's seed when given (a monk's turn), else
+    a fresh one. Other providers ignore `seed`."""
+
+    send_seed = True
 
     def __init__(self, *, url: str | None = None, **kw):
         if not url:
@@ -227,8 +240,9 @@ class LocalProvider(OpenRouterProvider):
     def __repr__(self) -> str:
         return f"LocalProvider(url={self.url!r})"
 
-    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None) -> Completion:
-        comp = super().complete(_split_model(model)[1], messages, tools, tool_choice, max_tokens, reasoning)
+    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None,
+                 seed=None) -> Completion:
+        comp = super().complete(_split_model(model)[1], messages, tools, tool_choice, max_tokens, reasoning, seed)
         comp.model = model
         return comp
 
@@ -360,7 +374,8 @@ class AnthropicProvider(_HttpProvider):
                 body["output_config"] = {"effort": reasoning["effort"]}
         return body
 
-    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None) -> Completion:
+    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None,
+                 seed=None) -> Completion:
         body = self.build_body(model, messages, tools, tool_choice, max_tokens, reasoning)
 
         def parse(data, status):
@@ -477,7 +492,8 @@ class OpenAIResponsesProvider(_HttpProvider):
             body["reasoning"] = {"effort": reasoning.get("effort") or self.effort}
         return body
 
-    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None) -> Completion:
+    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None,
+                 seed=None) -> Completion:
         body = self.build_body(model, messages, tools, tool_choice, max_tokens, reasoning)
 
         def parse(data, status):
@@ -555,9 +571,10 @@ class RoutingProvider:
                     self._made[kind] = cls(prices=self.prices, **self.kw)
             return self._made[kind]
 
-    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None) -> Completion:
+    def complete(self, model, messages, tools=None, tool_choice=None, max_tokens=None, reasoning=None,
+                 seed=None) -> Completion:
         return self.provider_for(model).complete(model, messages, tools=tools, tool_choice=tool_choice,
-                                                 max_tokens=max_tokens, reasoning=reasoning)
+                                                 max_tokens=max_tokens, reasoning=reasoning, seed=seed)
 
 
 def make_provider(cfg) -> RoutingProvider:

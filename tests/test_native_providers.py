@@ -262,3 +262,27 @@ def test_optional_species_only_when_chosen():
     assert set(run.species) == {"qwen", "sol"} and run.species["qwen"].model.startswith("local/")
     with pytest.raises(KeyError):
         cfg.with_species(["nope"])
+
+
+def test_local_provider_sends_a_seed():
+    from mortmain.providers import LocalProvider
+    bodies = []
+
+    def handler(req):
+        bodies.append(json.loads(req.content))
+        return httpx.Response(200, json={"model": "m", "choices": [{"message": {"role": "assistant", "content": "hi"}}],
+                                         "usage": {"prompt_tokens": 3, "completion_tokens": 1}})
+
+    p = LocalProvider(url="http://127.0.0.1:9/v1/chat/completions", transport=httpx.MockTransport(handler),
+                      sleep=lambda s: None)
+    msgs = [{"role": "user", "content": "x"}]
+    p.complete("local/m", msgs, seed=7)
+    p.complete("local/m", msgs)
+    p.complete("local/m", msgs)
+    assert bodies[0]["seed"] == 7
+    assert bodies[1]["seed"] != bodies[2]["seed"]          # fresh per call, never q27's default 0
+    seen = []
+    o = OpenRouterProvider(api_key="sk-test-not-real", sleep=lambda s: None,
+                           transport=httpx.MockTransport(lambda r: (seen.append(json.loads(r.content)), handler(r))[1]))
+    o.complete("meta/x", msgs, seed=7)
+    assert "seed" not in seen[0]                           # other providers ignore it
