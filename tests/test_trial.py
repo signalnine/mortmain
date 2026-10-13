@@ -149,3 +149,39 @@ def test_seed_rule_steers_to_yarrow():
     rule = (ROOT / "seed" / "rule").read_text()
     assert "yarrow names" in rule
     assert rule.index("yarrow names") < rule.index("profess NAME")
+
+
+def test_dry_elder_trial_from_a_seat(tmp_path, capsys):
+    from mortmain import cli
+    assert cli.main(["--runs", str(tmp_path), "run", "--lineage", "src", "--rung", "full", "--dry", "--fake-vm",
+                     "--budget", "3000", "--elder-budget", "8000", "--max-turns", "600"]) == 0
+    capsys.readouterr()
+    tag = sorted(p.stem for p in (tmp_path / "src" / "snapshots").glob("gen-*.json"))[1]
+    spec_path = tmp_path / "e.toml"
+    spec_path.write_text(
+        f'[trial]\nname="el"\nkind="elder"\nspecies="haiku"\nmax_turns=6000\nmax_cost_per_life=5.0\n'
+        f'seat={{from="src", tag="{tag}"}}\n'
+        '[base.scheduler]\nelder_lives=1\n'
+        '[base.species.haiku]\nlife_budget=3000\n[base.species.sol]\nlife_budget=8000\n'
+        '[base.species.deepseek]\nlife_budget=8000\n'
+        '[[arm]]\nid="sol"\nelder="sol"\n[[arm]]\nid="deepseek"\nelder="deepseek"\n')
+    spec = trial.load_spec(spec_path)
+    assert trial.main(["--runs", str(tmp_path), "run", str(spec_path), "--n", "1", "--parallel", "2",
+                       "--dry", "--fake-vm"]) == 0
+    d = tmp_path / "trials" / "el"
+    assert sorted(p.stem for p in d.glob("*-[0-9][0-9].json")) == ["deepseek-00", "sol-00"]
+    assert (d / "deepseek-00" / "fork.done.json").exists()
+    rep = trial.report_elder(spec, tmp_path, with_texts=True)
+    life = rep["arms"]["deepseek"]["lives"][0]
+    assert life["elder"] and life["died"] and life["halt"] == "elders_done" and life["turns"] > 0
+    assert rep["arms"]["deepseek"]["n"] == 1 and rep["texts"]["deepseek"][0][1]["last_words"] is not None
+    assert trial.main(["--runs", str(tmp_path), "report", str(spec_path), "--texts"]) == 0
+    out = capsys.readouterr().out
+    assert "deepseek" in out and (d / "texts.md").exists()
+
+
+def test_elder_spec_needs_elders(tmp_path):
+    p = tmp_path / "x.toml"
+    p.write_text('[trial]\nname="x"\nkind="elder"\nspecies="haiku"\n[[arm]]\nid="a"\n')
+    with pytest.raises(ValueError):
+        trial.load_spec(p)

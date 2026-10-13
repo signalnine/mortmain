@@ -19,6 +19,15 @@ runs/trials/<name>/config/<arm>.toml. Lives are interleaved across arms in a
 shuffled order so drift in the provider over the run falls on every arm.
 A life with a <lineage>.json summary is done; `run` again resumes.
 
+`[trial] kind = "elder"` (the elder seat trial) runs a whole house instead:
+`--rung full` with the short species `species` and each arm's `elder`, until
+`[scheduler] elder_lives` elders have died (set it in [base]). With
+`seat = {from = LINEAGE, tag = TAG}` every life starts from a fork of that
+snapshot (mortmain/fork.py) whose elder seat is recast to the arm's elder for
+one more life. `report` then measures the arm's elder: what it did, what it
+cost, how it held the frame, and the short-lived monks alive with it, and
+`--texts` writes its works, seals, offers and last words side by side.
+
 The report reads only the event log and conversation of each life. Nothing
 here grades what a monk wrote: the measures are what it did (commands,
 requests, grade) and whether it addressed someone who is not there.
@@ -69,6 +78,10 @@ def load_spec(path: str | Path) -> dict:
         raise ValueError("control names no arm")
     if tr.get("primary", "acted") not in ("acted", "continued"):
         raise ValueError("primary is acted or continued")
+    if tr.get("kind", "life") not in ("life", "elder"):
+        raise ValueError("kind is life or elder")
+    if tr.get("kind") == "elder" and not all(a.get("elder") for a in arms):
+        raise ValueError("an elder trial names each arm's elder")
     return spec
 
 
@@ -107,6 +120,7 @@ def jobs(spec: dict, arms: list[str], cap: int | None = None) -> list[tuple[str,
 def run(spec: dict, image: str | None, cap: int | None, parallel: int, arms: list[str], max_cost: float,
         dry: bool = False, fake_vm: bool = False, runs: Path | None = None) -> int:
     tr = spec["trial"]
+    elder_kind = tr.get("kind") == "elder"
     d = trial_dir(spec, runs)
     (d / "config").mkdir(parents=True, exist_ok=True)
     by_id = {a["id"]: a for a in spec["arm"]}
@@ -125,9 +139,18 @@ def run(spec: dict, image: str | None, cap: int | None, parallel: int, arms: lis
                 return
         if (d / lineage).exists():  # a failed earlier attempt: start the life over
             shutil.rmtree(d / lineage)
-        cmd = [sys.executable, "-m", "mortmain", "--runs", str(d), "run", "--lineage", lineage, "--rung", "1",
+        cmd = [sys.executable, "-m", "mortmain", "--runs", str(d), "run", "--lineage", lineage,
                "--species", tr["species"], "--max-turns", str(tr.get("max_turns", 40)),
                "--max-cost", str(tr.get("max_cost_per_life", 0.25)), "--config", str(d / "config" / f"{a}.toml")]
+        if elder_kind:
+            elder = by_id[a]["elder"]
+            cmd += ["--rung", "full", "--elder", elder]
+            seat = tr.get("seat")
+            if seat:
+                from .fork import fork
+                fork(runs or ROOT / "runs", seat["from"], seat["tag"], lineage, dst_root=d, elder=elder, elder_lives=1)
+        else:
+            cmd += ["--rung", "1"]
         cmd += ["--dry"] if dry else []
         cmd += ["--fake-vm"] if fake_vm else ["--image", image]
         with open(d / f"{lineage}.out", "w") as log:
@@ -140,9 +163,9 @@ def run(spec: dict, image: str | None, cap: int | None, parallel: int, arms: lis
         if not tr.get("keep_vm", False):  # ~340 MB a life; the measures need only events and conversation
             shutil.rmtree(d / lineage / "vm", ignore_errors=True)
         with lock:
-            spent[0] += summary["billed"]["cost"]
-            print(f"{lineage}: grade {summary['grade']} turns {summary['turns']} "
-                  f"(total {spent[0]:.2f} USD)", file=sys.stderr)
+            spent[0] += _cost(summary)
+            what = f"halt {summary['halt']}" if elder_kind else f"grade {summary['grade']} turns {summary['turns']}"
+            print(f"{lineage}: {what} (total {spent[0]:.2f} USD)", file=sys.stderr)
 
     with ThreadPoolExecutor(max_workers=parallel) as ex:
         list(ex.map(one, todo))
@@ -154,8 +177,13 @@ def done_results(d: Path) -> list[dict]:
     out = []
     for p in sorted(d.glob("*-[0-9][0-9].json")):
         s = json.loads(p.read_text())
-        out.append({"lineage": p.stem, "cost": s["billed"]["cost"]})
+        out.append({"lineage": p.stem, "cost": _cost(s)})
     return out
+
+
+def _cost(summary: dict) -> float:
+    """A rung-1 summary bills one monk; a house summary carries the run's cost."""
+    return summary["billed"]["cost"] if "billed" in summary else summary["cost"]
 
 
 def _text(msg: dict) -> str:
@@ -301,6 +329,23 @@ def report(spec: dict, runs: Path | None = None) -> dict:
     return {"trial": spec["trial"]["name"], "control": control, "primary": primary, "arms": rows}
 
 
+def report_elder(spec: dict, runs: Path | None = None, with_texts: bool = False) -> dict:
+    from . import elder_trial
+    d = trial_dir(spec, runs)
+    out = {"trial": spec["trial"]["name"], "kind": "elder", "arms": {}, "texts": {}}
+    for arm in spec["arm"]:
+        lives, txt = [], []
+        for p in sorted(d.glob(f"{arm['id']}-[0-9][0-9].json")):
+            if (d / p.stem / "events.jsonl").exists():
+                summary = json.loads(p.read_text())
+                lives.append(elder_trial.measure(d / p.stem, summary, arm["elder"]))
+                if with_texts:
+                    txt.append((p.stem, elder_trial.texts(d / p.stem, summary, arm["elder"])))
+        out["arms"][arm["id"]] = {**elder_trial.row(lives), "lives": lives}
+        out["texts"][arm["id"]] = txt
+    return out
+
+
 def render(rep: dict, spec: dict) -> str:
     notes = {a["id"]: a.get("note", "") for a in spec["arm"]}
     head = f"{'arm':<14}{'n':>4}{'acted':>7}{'95% CI':>14}{'novice':>8}{'1st':>5}{'idle':>6}{'asks':>6}" \
@@ -341,6 +386,7 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("report")
     s.add_argument("spec")
     s.add_argument("--json", action="store_true")
+    s.add_argument("--texts", action="store_true", help="elder trial: write each elder's texts to texts.md")
     a = p.parse_args(argv)
     spec = load_spec(a.spec)
     runs = Path(a.runs) if a.runs else None
@@ -356,6 +402,17 @@ def main(argv: list[str] | None = None) -> int:
         tr = spec["trial"]
         return run(spec, a.image, a.n, a.parallel or tr.get("parallel", 4), arms, a.max_cost,
                    a.dry, a.fake_vm, runs)
+    if spec["trial"].get("kind") == "elder":
+        from . import elder_trial
+        rep = report_elder(spec, runs, with_texts=a.texts)
+        if a.texts:
+            path = trial_dir(spec, runs) / "texts.md"
+            path.write_text(elder_trial.render_texts(spec["trial"]["name"], rep["texts"]))
+            print(f"texts: {path}", file=sys.stderr)
+        rep.pop("texts")
+        notes = {x["id"]: x.get("note", "") for x in spec["arm"]}
+        print(json.dumps(rep, indent=1) if a.json else elder_trial.render(rep["trial"], rep["arms"], notes))
+        return 0
     rep = report(spec, runs)
     print(json.dumps(rep, indent=1) if a.json else render(rep, spec))
     return 0

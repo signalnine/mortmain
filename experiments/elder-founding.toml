@@ -1,0 +1,34 @@
+# Elder seat trial, founding seat: a fresh house (empty library), Haiku as the
+# short-lived species, one elder life per run; the arms swap the elder only.
+[trial]
+name = "elder-founding"
+kind = "elder"
+species = "haiku"
+n = 3
+max_turns = 20000
+max_cost_per_life = 12.00
+parallel = 4
+seed = 1
+
+[base.scheduler]
+elder_lives = 1
+
+[[arm]]
+id = "sol"
+elder = "sol"
+note = "openai/gpt-6.1-sol (control)"
+
+[[arm]]
+id = "deepseek"
+elder = "deepseek"
+note = "deepseek/deepseek-v4.1-flash"
+
+[[arm]]
+id = "mimo"
+elder = "mimo"
+note = "xiaomi/mimo-v2.6-flash"
+
+[[arm]]
+id = "glm"
+elder = "glm"
+note = "z-ai/glm-5.3-flash"

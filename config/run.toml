@@ -35,6 +35,31 @@ life_budget = 250000
 max_tokens = 8192               # (default) per turn
 reasoning = true                # always reasons; request reasoning_details back
 
+# Elder candidates (OpenRouter), for the elder seat trial; run with --elder NAME
+[species.deepseek]
+model = "deepseek/deepseek-v4.1-flash"
+role = "elder"
+optional = true
+life_budget = 250000
+max_tokens = 8192
+reasoning = true
+
+[species.mimo]
+model = "xiaomi/mimo-v2.6-flash"
+role = "elder"
+optional = true
+life_budget = 250000
+max_tokens = 8192
+reasoning = true
+
+[species.glm]
+model = "z-ai/glm-5.3-flash"
+role = "elder"
+optional = true
+life_budget = 250000
+max_tokens = 8192
+reasoning = true
+
 [providers]
 # Model prefix -> provider: "anthropic" (Messages API; ANTHROPIC_API_KEY or
 # ANTHROPIC_KEY, plus ANTHROPIC_WORKSPACE_ID for a key not scoped to a

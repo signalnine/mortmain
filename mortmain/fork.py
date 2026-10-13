@@ -9,6 +9,12 @@ works in the library then, the secret) and a pending import: on its first
 start the House boots a fresh overlay of gen0 and extracts the tag's house
 trees over it. Its event log starts fresh with a "fork" record naming the
 source; the source lineage is not touched. No VM image is needed.
+
+`elder` / `elder_lives` recast the scheduler's elder seat for births after the
+tag: its species, and how many more elder lives before the run ends (the elder
+seat trial: one house state, a different elder each time). A living elder at
+the tag keeps its species. `dst_root` puts the new lineage under another runs
+root (a trial's directory).
 """
 from __future__ import annotations
 
@@ -20,8 +26,9 @@ from pathlib import Path
 PENDING = "fork.json"
 
 
-def fork(runs_root: Path, src: str, tag: str, dst: str) -> Path:
-    s, d = runs_root / src, runs_root / dst
+def fork(runs_root: Path, src: str, tag: str, dst: str, dst_root: Path | None = None,
+         elder: str | None = None, elder_lives: int | None = None) -> Path:
+    s, d = runs_root / src, (dst_root or runs_root) / dst
     tgz, meta_path = s / "snapshots" / f"{tag}.tgz", s / "snapshots" / f"{tag}.json"
     if not tgz.exists() or not meta_path.exists():
         raise FileNotFoundError(f"{src}: no export for {tag} (snapshots/{tag}.tgz/.json)")
@@ -30,6 +37,15 @@ def fork(runs_root: Path, src: str, tag: str, dst: str) -> Path:
     meta = json.loads(meta_path.read_text())
     st = meta["state"]
     st["lineage"] = dst
+    if elder is not None or elder_lives is not None:
+        seats = ((st.get("extras") or {}).get("scheduler") or {}).get("seats") or []
+        seat = next((x for x in seats if x["role"] == "elder"), None)
+        if seat is None:
+            raise ValueError(f"{src} {tag}: no elder seat to recast")
+        if elder is not None:
+            seat["species"] = elder
+        if elder_lives is not None:
+            seat["max_lives"] = seat["lives"] + elder_lives
     (d / "snapshots").mkdir(parents=True)
     (d / "conversations").mkdir()
     (d / "keys").mkdir(mode=0o700)

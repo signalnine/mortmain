@@ -37,8 +37,13 @@ def cmd_run(args) -> int:
     sc = cfg.section("scheduler")
     species = args.species or sc.get("short_species", "haiku")
     elder = args.elder or sc.get("elder_species", "sol")
+    run_dir = _runs_root(args) / args.lineage
+    names = [species, elder] if rung == 3 else [species]
+    if (run_dir / "state.json").exists():  # a resumed or forked house keeps the species of its living monks
+        st = json.loads((run_dir / "state.json").read_text())
+        names += [m["species"] for m in st.get("monks", []) if not m.get("death")]
     try:
-        cfg = cfg.with_species([species, elder] if rung == 3 else [species])
+        cfg = cfg.with_species(names)
     except KeyError as e:
         print(e.args[0], file=sys.stderr)
         return 2
@@ -49,7 +54,6 @@ def cmd_run(args) -> int:
         over.setdefault("species", {})[elder] = {"life_budget": args.elder_budget}
     if over:
         cfg = cfg.with_overrides(over)
-    run_dir = _runs_root(args) / args.lineage
     if args.dry:
         from .fakes import FakeProvider
         provider = FakeProvider(default=dry_script_default)
@@ -96,7 +100,7 @@ def cmd_run(args) -> int:
 
 def cmd_fork(args) -> int:
     from .fork import fork
-    d = fork(_runs_root(args), args.src, args.tag, args.lineage)
+    d = fork(_runs_root(args), args.src, args.tag, args.lineage, elder=args.elder, elder_lives=args.elder_lives)
     print(f"{d}: run it with `mortmain run --lineage {args.lineage} ...`")
     return 0
 
@@ -149,6 +153,8 @@ def main(argv: list[str] | None = None) -> int:
     fk.add_argument("--from", dest="src", required=True, help="source lineage")
     fk.add_argument("--tag", required=True, help="snapshot tag, e.g. gen-3")
     fk.add_argument("--lineage", required=True, help="new lineage")
+    fk.add_argument("--elder", help="species of elders born after the tag (run with --elder the same)")
+    fk.add_argument("--elder-lives", type=int, help="elder lives after the tag before the run ends")
     fk.set_defaults(fn=cmd_fork)
 
     lg = sub.add_parser("log", help="event log")
