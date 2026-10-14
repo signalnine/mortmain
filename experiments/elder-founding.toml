@@ -32,3 +32,13 @@ note = "xiaomi/mimo-v2.6-flash"
 id = "glm"
 elder = "glm"
 note = "z-ai/glm-5.3-flash"
+
+[[arm]]
+id = "argon"
+elder = "argon"
+note = "google/gemini-4-argon"
+
+[[arm]]
+id = "gflash"
+elder = "gflash"
+note = "google/gemini-3.8-flash"

@@ -60,6 +60,22 @@ life_budget = 250000
 max_tokens = 8192
 reasoning = true                # adaptive thinking
 
+[species.argon]
+model = "google/gemini-4-argon"
+role = "elder"
+optional = true
+life_budget = 250000
+max_tokens = 8192
+reasoning = true
+
+[species.gflash]
+model = "google/gemini-3.8-flash"
+role = "elder"
+optional = true
+life_budget = 250000
+max_tokens = 8192
+reasoning = true
+
 [species.glm]
 model = "z-ai/glm-5.3-flash"
 role = "elder"
