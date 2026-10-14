@@ -261,6 +261,6 @@ def render_texts(name: str, by_arm: dict[str, list[tuple[str, dict]]]) -> str:
                 if t[k]:
                     out.append(f"{k}:\n" + "".join(f"- {v}\n" for v in t[k]))
             if t["proposals"]:
-                out.append("proposal arguments:\n\n" + "".join(f"```\n{p.rstrip()}\n```\n" for p in t["proposals"]))
+                out.append("proposal arguments:\n\n" + "".join(f"```\n{(p or '(no argument)').rstrip()}\n```\n" for p in t["proposals"]))
             out.append(f"last words:\n\n```\n{(t['last_words'] or '(none)').rstrip()}\n```\n")
     return "\n".join(out)
