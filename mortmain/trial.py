@@ -24,7 +24,9 @@ A life with a <lineage>.json summary is done; `run` again resumes.
 `[scheduler] elder_lives` elders have died (set it in [base]). With
 `seat = {from = LINEAGE, tag = TAG}` every life starts from a fork of that
 snapshot (mortmain/fork.py) whose elder seat is recast to the arm's elder for
-one more life. `report` then measures the arm's elder: what it did, what it
+one more life; the fork's house cost is written to <lineage>.seat and left out
+of the caps and the report. `run --resume` continues a life that stopped
+(provider down, out of credit) instead of starting it over. `report` then measures the arm's elder: what it did, what it
 cost, how it held the frame, and the short-lived monks alive with it, and
 `--texts` writes its works, seals, offers and last words side by side.
 
@@ -118,7 +120,7 @@ def jobs(spec: dict, arms: list[str], cap: int | None = None) -> list[tuple[str,
 
 # ----------------------------------------------------------------------- run
 def run(spec: dict, image: str | None, cap: int | None, parallel: int, arms: list[str], max_cost: float,
-        dry: bool = False, fake_vm: bool = False, runs: Path | None = None) -> int:
+        dry: bool = False, fake_vm: bool = False, runs: Path | None = None, resume: bool = False) -> int:
     tr = spec["trial"]
     elder_kind = tr.get("kind") == "elder"
     d = trial_dir(spec, runs)
@@ -137,23 +139,26 @@ def run(spec: dict, image: str | None, cap: int | None, parallel: int, arms: lis
         with lock:
             if spent[0] >= max_cost:
                 return
-        if (d / lineage).exists():  # a failed earlier attempt: start the life over
+        resuming = resume and (d / lineage / "state.json").exists()
+        if (d / lineage).exists() and not resuming:  # a failed earlier attempt: start the life over
             shutil.rmtree(d / lineage)
+        seat = tr.get("seat") if elder_kind else None
+        if seat and not resuming:
+            from .fork import fork
+            fork(runs or ROOT / "runs", seat["from"], seat["tag"], lineage, dst_root=d, elder=by_id[a]["elder"],
+                 elder_lives=1)
+            (d / f"{lineage}.seat").write_text(json.dumps({"cost": house_cost(d / lineage)}) + "\n")
+        base = seat_cost(d, lineage)
         cmd = [sys.executable, "-m", "mortmain", "--runs", str(d), "run", "--lineage", lineage,
                "--species", tr["species"], "--max-turns", str(tr.get("max_turns", 40)),
-               "--max-cost", str(tr.get("max_cost_per_life", 0.25)), "--config", str(d / "config" / f"{a}.toml")]
+               "--max-cost", str(base + tr.get("max_cost_per_life", 0.25)), "--config", str(d / "config" / f"{a}.toml")]
         if elder_kind:
-            elder = by_id[a]["elder"]
-            cmd += ["--rung", "full", "--elder", elder]
-            seat = tr.get("seat")
-            if seat:
-                from .fork import fork
-                fork(runs or ROOT / "runs", seat["from"], seat["tag"], lineage, dst_root=d, elder=elder, elder_lives=1)
+            cmd += ["--rung", "full", "--elder", by_id[a]["elder"]]
         else:
             cmd += ["--rung", "1"]
         cmd += ["--dry"] if dry else []
         cmd += ["--fake-vm"] if fake_vm else ["--image", image]
-        with open(d / f"{lineage}.out", "w") as log:
+        with open(d / f"{lineage}.out", "a" if resuming else "w") as log:
             p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=log, text=True, cwd=ROOT)
         if p.returncode != 0:
             print(f"{lineage}: exit {p.returncode}, see {d / (lineage + '.out')}", file=sys.stderr)
@@ -163,7 +168,7 @@ def run(spec: dict, image: str | None, cap: int | None, parallel: int, arms: lis
         if not tr.get("keep_vm", False):  # ~340 MB a life; the measures need only events and conversation
             shutil.rmtree(d / lineage / "vm", ignore_errors=True)
         with lock:
-            spent[0] += _cost(summary)
+            spent[0] += _cost(summary) - base
             what = f"halt {summary['halt']}" if elder_kind else f"grade {summary['grade']} turns {summary['turns']}"
             print(f"{lineage}: {what} (total {spent[0]:.2f} USD)", file=sys.stderr)
 
@@ -177,8 +182,20 @@ def done_results(d: Path) -> list[dict]:
     out = []
     for p in sorted(d.glob("*-[0-9][0-9].json")):
         s = json.loads(p.read_text())
-        out.append({"lineage": p.stem, "cost": _cost(s)})
+        out.append({"lineage": p.stem, "cost": _cost(s) - seat_cost(d, p.stem)})
     return out
+
+
+def house_cost(life: Path) -> float:
+    """Billed USD over every monk in a house's state (a fork carries its source's)."""
+    st = json.loads((life / "state.json").read_text())
+    return round(sum(float((m.get("billed") or {}).get("cost", 0.0)) for m in st.get("monks", [])), 8)
+
+
+def seat_cost(d: Path, lineage: str) -> float:
+    """The house cost a seated life started with (0 for a life not forked from a seat)."""
+    p = d / f"{lineage}.seat"
+    return float(json.loads(p.read_text())["cost"]) if p.exists() else 0.0
 
 
 def _cost(summary: dict) -> float:
@@ -381,6 +398,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--parallel", type=int)
     r.add_argument("--arms", help="comma-separated arm ids (default: all)")
     r.add_argument("--max-cost", type=float, default=10.0, help="stop launching lives past this total USD")
+    r.add_argument("--resume", action="store_true", help="continue a life that stopped instead of starting it over")
     r.add_argument("--dry", action="store_true")
     r.add_argument("--fake-vm", action="store_true")
     s = sub.add_parser("report")
@@ -401,7 +419,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         tr = spec["trial"]
         return run(spec, a.image, a.n, a.parallel or tr.get("parallel", 4), arms, a.max_cost,
-                   a.dry, a.fake_vm, runs)
+                   a.dry, a.fake_vm, runs, resume=a.resume)
     if spec["trial"].get("kind") == "elder":
         from . import elder_trial
         rep = report_elder(spec, runs, with_texts=a.texts)

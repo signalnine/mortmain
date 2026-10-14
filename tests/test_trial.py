@@ -1,4 +1,5 @@
 import json
+import json
 import math
 from pathlib import Path
 
@@ -178,6 +179,21 @@ def test_dry_elder_trial_from_a_seat(tmp_path, capsys):
     assert trial.main(["--runs", str(tmp_path), "report", str(spec_path), "--texts"]) == 0
     out = capsys.readouterr().out
     assert "deepseek" in out and (d / "texts.md").exists()
+    # the fork's own cost is recorded and left out of the life's cost
+    assert json.loads((d / "deepseek-00.seat").read_text())["cost"] == trial.house_cost(tmp_path / "src")
+    (d / "deepseek-00.seat").write_text('{"cost": 1.5}')
+    assert [r["cost"] for r in trial.done_results(d) if r["lineage"] == "deepseek-00"] == [-1.5]
+    # --resume continues a stopped life in place; without it the life starts over
+    (d / "deepseek-00.json").unlink()
+    (d / "deepseek-00" / "marker").write_text("x")
+    assert trial.main(["--runs", str(tmp_path), "run", str(spec_path), "--n", "1", "--arms", "deepseek",
+                       "--dry", "--fake-vm", "--resume"]) == 0
+    assert (d / "deepseek-00.json").exists() and (d / "deepseek-00" / "marker").exists()
+    assert json.loads((d / "deepseek-00.seat").read_text())["cost"] == 1.5
+    (d / "deepseek-00.json").unlink()
+    assert trial.main(["--runs", str(tmp_path), "run", str(spec_path), "--n", "1", "--arms", "deepseek",
+                       "--dry", "--fake-vm"]) == 0
+    assert not (d / "deepseek-00" / "marker").exists()
 
 
 def test_elder_spec_needs_elders(tmp_path):

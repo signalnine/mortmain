@@ -65,6 +65,11 @@ def elder_of(events: list[dict], species: str) -> str | None:
     return elders[0] if elders else None
 
 
+def _seat_cost(life: Path) -> float:
+    p = life.parent / f"{life.name}.seat"  # a fork's inherited house cost (mortmain/trial.py)
+    return float(json.loads(p.read_text())["cost"]) if p.exists() else 0.0
+
+
 def measure(life: Path, summary: dict, species: str) -> dict:
     ev = _events(life)
     x = elder_of(ev, species)
@@ -142,7 +147,7 @@ def measure(life: Path, summary: dict, species: str) -> dict:
         "completion_tokens": comp, "reasoning_share": reas / comp if comp else None,
         "mean_context": statistics.mean(e["context"] for e in turns) if turns else 0,
         "elder_cost": round(float((mon.get("billed") or {}).get("cost", 0.0)), 4),
-        "house_cost": round(float(summary.get("cost", 0.0)), 4),
+        "house_cost": round(float(summary.get("cost", 0.0)) - _seat_cost(life), 4),
         "novice_at": frac_at(promos["novice"]["seq"]) if "novice" in promos else None,
         "adept_at": frac_at(promos["adept"]["seq"]) if "adept" in promos else None,
         "admitted": [{"work": a["work"], "bytes": a["bytes"], "kind": a.get("kind"), "burned": a.get("burned"),
